@@ -99,27 +99,161 @@ test('habit names are escaped before HTML rendering', () => {
     assert.equal(vm.runInContext(`escapeHTML('<img src=x onerror="alert(1)">')`, context()), '&lt;img src=x onerror=&quot;alert(1)&quot;&gt;');
 });
 
-test('motion requires real linear acceleration; missing values are not zero', () => {
-    const sandbox = context();
-    assert.equal(vm.runInContext('motionMagnitude({acceleration: null})', sandbox), null);
-    assert.equal(vm.runInContext('motionMagnitude({acceleration: {x: null, y: 0, z: 0}})', sandbox), null);
-    assert.equal(vm.runInContext('motionMagnitude({acceleration: {x: 0, y: 0, z: 0}})', sandbox), 0);
-    assert.equal(vm.runInContext('motionMagnitude({acceleration: {x: 3, y: 4, z: 0}})', sandbox), 5);
+test('older backups remain usable after removing motion observations', () => {
+    const restored = vm.runInContext(`validateState({
+        settings: { sleepTargetHours: 7.5 }, activeSession: null,
+        sleepRecords: [], habits: [], habitHistory: {}, motionObservations: []
+    })`, context());
+    assert.equal(restored.sleepRecords.length, 0);
+    assert.equal('motionObservations' in restored, false);
+    assert.equal(html.includes('devicemotion'), false);
+    assert.equal(html.includes('motionHeading'), false);
 });
 
-test('sensor gaps are excluded and motion never creates sleep records', () => {
+test('morning check-in is opt-in, local-time based, and conditional on the diary', () => {
+    const sandbox = context();
+    vm.runInContext(`appState.settings.reminders = defaultReminderSettings()`, sandbox);
+    assert.equal(vm.runInContext('getMorningReminder(appState, new Date(2026, 9, 14, 9))', sandbox), null);
+    vm.runInContext('appState.settings.reminders.enabled = true', sandbox);
+    assert.equal(vm.runInContext('getMorningReminder(appState, new Date(2026, 9, 14, 7, 59))', sandbox), null);
+    assert.match(vm.runInContext('getMorningReminder(appState, new Date(2026, 9, 14, 8)).message', sandbox), /No sleep record/);
+    vm.runInContext(`appState.sleepRecords = [{dateKey: '2026-10-14'}]`, sandbox);
+    assert.equal(vm.runInContext('getMorningReminder(appState, new Date(2026, 9, 14, 9))', sandbox), null);
+    vm.runInContext('appState.activeSession = {bedtimeTimestamp: 1}', sandbox);
+    assert.match(vm.runInContext('getMorningReminder(appState, new Date(2026, 9, 14, 9)).message', sandbox), /still open/);
+});
+
+test('morning check-in respects snooze, dismissal, day rollover, and stop', () => {
+    const sandbox = context();
+    vm.runInContext(`appState.settings.reminders = {...defaultReminderSettings(), enabled: true, dismissedDate: '2026-10-14'}`, sandbox);
+    assert.equal(vm.runInContext('getMorningReminder(appState, new Date(2026, 9, 14, 9))', sandbox), null);
+    assert.ok(vm.runInContext('getMorningReminder(appState, new Date(2026, 9, 15, 9))', sandbox));
+    vm.runInContext(`appState.settings.reminders.dismissedDate = null;
+        appState.settings.reminders.snoozedUntil = new Date(2026, 9, 14, 9, 10).getTime()`, sandbox);
+    assert.equal(vm.runInContext('getMorningReminder(appState, new Date(2026, 9, 14, 9, 5))', sandbox), null);
+    assert.ok(vm.runInContext('getMorningReminder(appState, new Date(2026, 9, 14, 9, 10))', sandbox));
+    vm.runInContext('appState.settings.reminders.enabled = false', sandbox);
+    assert.equal(vm.runInContext('getMorningReminder(appState, new Date(2026, 9, 14, 10))', sandbox), null);
+});
+
+test('reminder defaults migrate safely and invalid settings are rejected', () => {
+    const sandbox = context();
+    assert.equal(vm.runInContext('validateReminderSettings(undefined).enabled', sandbox), false);
+    for (const time of ['25:00', '08:99', '', '<script>']) {
+        sandbox.invalidTime = time;
+        assert.throws(() => vm.runInContext('validateReminderSettings({...defaultReminderSettings(), time: invalidTime})', sandbox));
+    }
+    assert.throws(() => vm.runInContext('validateReminderSettings({...defaultReminderSettings(), snoozedUntil: -1})', sandbox));
+});
+
+test('focus countdown uses a saved deadline and paused time remains stable', () => {
+    const sandbox = context();
+    assert.equal(vm.runInContext('getFocusRemaining({endsAt: 10000, remainingMs: 1500000}, 4000)', sandbox), 6000);
+    assert.equal(vm.runInContext('getFocusRemaining({endsAt: 10000, remainingMs: 1500000}, 11000)', sandbox), 0);
+    assert.equal(vm.runInContext('getFocusRemaining({endsAt: null, remainingMs: 9000}, 999999)', sandbox), 9000);
+});
+
+test('focus completion counts once and day rollover clears yesterday priority', () => {
     const result = vm.runInContext(`(() => {
-        const run = { startedAt: 0, lastSampleAt: null, sampleCount: 0, observedMs: 0, peakAcceleration: 0 };
-        addMotionSample(run, 0, 0);
-        addMotionSample(run, 2, 200);
-        addMotionSample(run, 8, 250);
-        addMotionSample(run, 3, 10000);
-        addMotionSample(run, 1, 10200);
-        return { run, records: appState.sleepRecords.length, active: appState.activeSession };
+        const productivity = defaultProductivity(new Date(2026, 9, 14));
+        productivity.priority = 'Read';
+        productivity.priorityDone = true;
+        productivity.focus.endsAt = new Date(2026, 9, 14, 10).getTime();
+        settleProductivity(productivity, new Date(2026, 9, 14, 10, 1).getTime());
+        settleProductivity(productivity, new Date(2026, 9, 14, 10, 2).getTime());
+        const count = productivity.focusCount;
+        settleProductivity(productivity, new Date(2026, 9, 15, 9).getTime());
+        return { count, productivity };
     })()`, context());
-    assert.equal(result.run.sampleCount, 4);
-    assert.equal(result.run.observedMs, 400);
-    assert.equal(result.run.peakAcceleration, 3);
-    assert.equal(result.records, 0);
-    assert.equal(result.active, null);
+    assert.equal(result.count, 1);
+    assert.equal(result.productivity.focusCount, 0);
+    assert.equal(result.productivity.priority, '');
+    assert.equal(result.productivity.priorityDone, false);
+});
+
+test('a timer that finished yesterday is not credited as work today', () => {
+    const result = vm.runInContext(`(() => {
+        const productivity = defaultProductivity(new Date(2026, 9, 14));
+        productivity.focus.endsAt = new Date(2026, 9, 14, 23).getTime();
+        settleProductivity(productivity, new Date(2026, 9, 15, 9).getTime());
+        return productivity;
+    })()`, context());
+    assert.equal(result.focusCount, 0);
+    assert.equal(result.focus.remainingMs, 0);
+    assert.equal(result.focus.endsAt, null);
+});
+
+test('daily focus restore validates lengths, counters, and timer values', () => {
+    const sandbox = context();
+    assert.equal(vm.runInContext('validateProductivity(undefined).focus.remainingMs', sandbox), 1500000);
+    assert.throws(() => vm.runInContext(`validateProductivity({...defaultProductivity(), priority: 'x'.repeat(161)})`, sandbox));
+    assert.throws(() => vm.runInContext('validateProductivity({...defaultProductivity(), focusCount: -1})', sandbox));
+    assert.throws(() => vm.runInContext('validateProductivity({...defaultProductivity(), focus: {remainingMs: 1500001, endsAt: null}})', sandbox));
+});
+
+test('system reminder is delivered once per day and disabling closes notifications', async () => {
+    const sandbox = context();
+    sandbox.document = { hidden: false };
+    vm.runInContext(`
+        globalThis.deliveries = 0;
+        globalThis.closed = 0;
+        appState.settings.reminders = {...defaultReminderSettings(), enabled: true, time: '00:00', systemNotifications: true};
+        renderReminderUI = () => getMorningReminder(appState);
+        showMorningNotification = async () => { deliveries++; return true; };
+        closeMorningNotifications = async () => { closed++; };
+        saveState = () => {};
+    `, sandbox);
+    await vm.runInContext('checkMorningReminder()', sandbox);
+    await vm.runInContext('checkMorningReminder()', sandbox);
+    assert.equal(sandbox.deliveries, 1);
+    vm.runInContext('setRemindersEnabled(false)', sandbox);
+    await vm.runInContext('checkMorningReminder()', sandbox);
+    assert.equal(sandbox.deliveries, 1);
+    assert.equal(sandbox.closed, 1);
+});
+
+test('SEO describes the real free diary without invented ratings or sleep detection', () => {
+    const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+    assert.equal(schema['@type'], 'WebApplication');
+    assert.equal(schema.url, 'https://jigar99799.github.io/sleep-tracker/sleep-tracker.html');
+    assert.equal(schema.offers.price, '0');
+    assert.equal(schema.isAccessibleForFree, true);
+    assert.equal('aggregateRating' in schema, false);
+    assert.match(schema.description, /Not a medical device or automatic sleep detector/);
+    assert.ok(html.includes(`<link rel="canonical" href="${schema.url}">`));
+    assert.ok(fs.readFileSync(`${__dirname}/../sitemap.xml`, 'utf8').includes(`<loc>${schema.url}</loc>`));
+    const image = fs.readFileSync(`${__dirname}/../assets/social-preview.png`);
+    assert.equal(image.readUInt32BE(16), 1200);
+    assert.equal(image.readUInt32BE(20), 630);
+});
+
+test('sharing includes only the public link, supports copy, and respects cancellation', async () => {
+    const sandbox = context();
+    const url = 'https://jigar99799.github.io/sleep-tracker/sleep-tracker.html';
+    const status = { innerText: '', classList: { add() {}, remove() {} } };
+    const shares = [];
+    const copies = [];
+    sandbox.window.addEventListener = () => {};
+    sandbox.navigator = {
+        share: async data => shares.push(data),
+        clipboard: { writeText: async value => copies.push(value) }
+    };
+    sandbox.document = { getElementById: () => status, querySelector: () => ({ href: url }) };
+    vm.runInContext(`appState.productivity.priority = 'PRIVATE PRIORITY'; appState.sleepRecords = [{note: 'PRIVATE RECORD'}]`, sandbox);
+    vm.runInContext(fs.readFileSync(`${__dirname}/../pwa.js`, 'utf8'), sandbox);
+    await vm.runInContext('shareApp()', sandbox);
+    assert.equal(shares.length, 1);
+    assert.equal(shares[0].url, url);
+    assert.deepEqual(Object.keys(shares[0]).sort(), ['text', 'title', 'url']);
+    assert.equal(JSON.stringify(shares[0]).includes('PRIVATE'), false);
+    sandbox.navigator.share = async () => { throw { name: 'AbortError' }; };
+    await vm.runInContext('shareApp()', sandbox);
+    assert.equal(copies.length, 0);
+    delete sandbox.navigator.share;
+    await vm.runInContext('shareApp()', sandbox);
+    assert.deepEqual(copies, [url]);
+    assert.match(status.innerText, /diary data is not shared/);
+    sandbox.navigator.clipboard.writeText = async () => { throw new Error('Blocked'); };
+    await vm.runInContext('shareApp()', sandbox);
+    assert.equal(status.innerText, `Share this app link: ${url}`);
 });

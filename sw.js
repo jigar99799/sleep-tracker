@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sleep-diary-v1';
+const CACHE_NAME = 'sleep-diary-v3';
 const APP_FILES = [
     './', './index.html', './sleep-tracker.html', './manifest.webmanifest', './pwa.js',
     './assets/app.css', './assets/icons.css', './assets/chart.umd.js',
@@ -29,5 +29,15 @@ self.addEventListener('fetch', event => {
             if (event.request.mode === 'navigate') return cache.match('./sleep-tracker.html');
             return Response.error();
         }
+    }));
+});
+
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    const target = new URL('./sleep-tracker.html', self.registration.scope).href;
+    event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async clients => {
+        const existing = clients.find(client => new URL(client.url).origin === self.location.origin && new URL(client.url).pathname === new URL(target).pathname);
+        if (existing) return existing.focus();
+        return self.clients.openWindow(target);
     }));
 });

@@ -21,9 +21,13 @@ async function build() {
     copy('node_modules/@fontsource-variable/inter/LICENSE', 'inter-LICENSE.txt');
     for (const size of [192, 512]) await sharp(path.join(root, 'icon.svg')).resize(size, size).png().toFile(path.join(assets, `icon-${size}.png`));
     const output = path.join(root, 'dist');
+    fs.rmSync(output, { recursive: true, force: true });
     fs.mkdirSync(output, { recursive: true });
-    for (const name of ['index.html', 'sleep-tracker.html', 'manifest.webmanifest', 'pwa.js', 'sw.js', 'assets']) {
+    for (const name of ['index.html', 'sleep-tracker.html', 'manifest.webmanifest', 'pwa.js', 'sw.js', 'sitemap.xml', 'assets']) {
         fs.cpSync(path.join(root, name), path.join(output, name), { recursive: true });
+    }
+    for (const name of fs.readdirSync(root).filter(name => /^google[a-zA-Z0-9_-]+\.html$/.test(name))) {
+        fs.copyFileSync(path.join(root, name), path.join(output, name));
     }
     console.log('Built local assets and GitHub Pages site in dist/.');
 }

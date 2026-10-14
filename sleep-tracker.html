@@ -3,9 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sleep & Habit Log</title>
+    <title>Sleep &amp; Habit Log | Free Sleep Diary &amp; Habit Tracker</title>
     <meta name="theme-color" content="#090b0e">
-    <meta name="description" content="Private, offline-capable sleep diary and optional foreground phone motion observations. No inferred sleep stages.">
+    <meta name="description" content="Free, private sleep diary with daily habits, a focus timer, and optional morning check-ins. Install on Android and use offline. No account or subscription.">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://jigar99799.github.io/sleep-tracker/sleep-tracker.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Sleep &amp; Habit Log">
+    <meta property="og:title" content="Sleep &amp; Habit Log | Free Sleep Diary &amp; Habit Tracker">
+    <meta property="og:description" content="A private sleep diary, daily habits, and a focus timer. Install on Android. No account, subscription, or invented sleep scores.">
+    <meta property="og:url" content="https://jigar99799.github.io/sleep-tracker/sleep-tracker.html">
+    <meta property="og:image" content="https://jigar99799.github.io/sleep-tracker/assets/social-preview.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Sleep and Habit Log interface showing the timestamp clock with no personal data.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Sleep &amp; Habit Log | Free Sleep Diary">
+    <meta name="twitter:description" content="Private sleep diary, habits, and a focus timer. Install on Android and use offline. No account or subscription.">
+    <meta name="twitter:image" content="https://jigar99799.github.io/sleep-tracker/assets/social-preview.png">
+    <meta name="twitter:image:alt" content="The Sleep and Habit Log app interface without personal records.">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Sleep & Habit Log",
+        "url": "https://jigar99799.github.io/sleep-tracker/sleep-tracker.html",
+        "image": "https://jigar99799.github.io/sleep-tracker/assets/social-preview.png",
+        "description": "A private, user-reported sleep diary with daily habits, a focus timer, and optional check-ins while open. Not a medical device or automatic sleep detector.",
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "Any modern web browser; installable on Android",
+        "browserRequirements": "Requires JavaScript. Offline setup requires HTTPS or localhost.",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "featureList": ["User-reported sleep diary", "Daily habits", "Daily priority", "Focus countdown", "Offline use", "Optional in-app morning check-ins"]
+    }
+    </script>
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="icon" href="./assets/icon-192.png" type="image/png">
     <link rel="apple-touch-icon" href="./assets/icon-192.png">
@@ -40,6 +72,7 @@
         button:focus-visible, a:focus-visible { outline: 2px solid #06b6d4; outline-offset: 3px; }
         .rounded-xl { border-radius: 8px; }
         .habit-name { overflow-wrap: anywhere; min-width: 0; }
+        #sleepDurationChart { max-width: 100%; }
         #habitItemsContainer > div > div:first-child { min-width: 0; flex: 1; }
         #habitItemsContainer button, #habitItemsContainer > div > div:last-child { flex-shrink: 0; }
         [id$="Modal"] { overflow-y: auto; }
@@ -96,6 +129,7 @@
             <!-- Header Controls -->
             <div class="flex items-center space-x-2">
                 <button id="btnInstall" onclick="installApp()" class="hidden p-2 text-accentCyan" title="Install app" aria-label="Install app"><i class="fa-solid fa-download"></i></button>
+                <button onclick="shareApp()" class="p-2 text-accentCyan" title="Share app link" aria-label="Share app link"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>
                 <button onclick="openTargetModal()" class="bg-white/5 hover:bg-white/10 text-gray-300 text-xs px-2.5 py-1.5 rounded-lg border border-white/10 transition flex items-center gap-1.5" title="Change Sleep Target">
                     <i class="fa-solid fa-bullseye text-accentCyan text-xs"></i>
                     <span>Target: <strong id="headerTargetLabel" class="text-white">7.5h</strong></span>
@@ -115,27 +149,18 @@
     <main class="max-w-5xl mx-auto px-4 lg:px-8 space-y-6">
 
         <p id="offlineStatus" class="text-[11px] text-gray-400" role="status" aria-live="polite">Local diary · No account · No subscriptions</p>
+        <p id="shareStatus" class="hidden text-xs text-accentCyan break-words" role="status" aria-live="polite"></p>
 
-        <section class="border-y border-white/10 py-4" aria-labelledby="motionHeading">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div class="min-w-0 flex-1">
-                    <h2 id="motionHeading" class="text-sm font-bold text-white"><i class="fa-solid fa-mobile-screen-button text-accentCyan mr-2"></i>Phone motion observations</h2>
-                    <p class="text-xs text-gray-400 mt-1">Phone movement is not sleep. No automatic sleep detection or sleep-stage claims.</p>
-                    <p id="motionStatus" role="status" aria-live="polite" class="text-xs text-amber-300 mt-2">Checking sensor availability…</p>
-                </div>
-                <div class="flex gap-2 items-center">
-                    <button id="btnMotion" onclick="toggleMotion()" class="text-xs bg-white/5 border border-white/15 rounded-lg px-3 py-2 disabled:opacity-50" disabled><i class="fa-solid fa-play mr-1"></i>Observe motion</button>
-                    <button onclick="clearMotionObservations()" title="Delete motion observations" aria-label="Delete motion observations" class="p-2 text-gray-400 hover:text-rose-300"><i class="fa-solid fa-trash-can"></i></button>
+        <aside id="morningCheckin" class="hidden border-l-2 border-accentAmber pl-4 py-2" role="status" aria-live="polite">
+            <div class="flex items-start justify-between gap-3">
+                <p id="morningCheckinMessage" class="text-sm text-amber-200"></p>
+                <div class="flex shrink-0 gap-2">
+                    <button onclick="snoozeMorningReminder()" title="Snooze for 10 minutes" aria-label="Snooze for 10 minutes" class="p-2 text-amber-300"><i class="fa-solid fa-clock"></i></button>
+                    <button onclick="dismissMorningReminder()" title="Dismiss for today" aria-label="Dismiss for today" class="p-2 text-gray-400"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             </div>
-            <dl class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 text-xs">
-                <div><dt class="text-gray-400">Samples received</dt><dd id="motionSamples" class="text-white font-semibold mt-1">—</dd></div>
-                <div><dt class="text-gray-400">Observed coverage</dt><dd id="motionCoverage" class="text-white font-semibold mt-1">—</dd></div>
-                <div><dt class="text-gray-400">Peak acceleration</dt><dd id="motionPeak" class="text-white font-semibold mt-1">—</dd></div>
-                <div><dt class="text-gray-400">Last reading</dt><dd id="motionLast" class="text-white font-semibold mt-1">—</dd></div>
-            </dl>
-            <p class="text-[11px] text-gray-500 mt-3">Foreground only. Android may suspend sensors when the screen locks. No access to other apps, system screen time, heart rate, or Android activity recognition.</p>
-        </section>
+            <button onclick="reviewMorningLog()" class="text-xs text-accentCyan py-1"><i class="fa-solid fa-pen-to-square mr-1"></i>Review sleep log</button>
+        </aside>
 
         <!-- 1-TAP SLEEP STAMP CLOCK -->
         <div class="glass-card rounded-xl p-5 border border-white/10">
@@ -219,6 +244,49 @@
                 </div>
             </div>
         </div>
+
+        <section class="border-y border-white/10 py-4" aria-labelledby="todayHeading">
+            <h2 id="todayHeading" class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-bullseye text-accentGreen mr-2"></i>Today's focus</h2>
+            <div class="grid sm:grid-cols-2 gap-5 text-xs">
+                <div>
+                    <label for="inputDailyPriority" class="block text-gray-300 mb-2">One priority</label>
+                    <input id="inputDailyPriority" type="text" maxlength="160" placeholder="What matters today?" oninput="saveDailyPriority(this.value)" class="w-full min-w-0 bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-white">
+                    <label class="flex items-center gap-2 mt-3"><input id="inputPriorityDone" type="checkbox" onchange="completeDailyPriority(this.checked)" class="accent-emerald-500 w-4 h-4" disabled>Priority completed</label>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <span id="focusTime" role="timer" aria-live="off" class="text-2xl font-bold tabular-nums text-white block w-24">25:00</span>
+                            <span class="text-gray-400">25-minute focus timer</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="btnFocusToggle" onclick="toggleFocusTimer()" title="Start focus timer" aria-label="Start focus timer" class="w-10 h-10 rounded-lg bg-emerald-500 text-black"><i class="fa-solid fa-play"></i></button>
+                            <button onclick="resetFocusTimer()" title="Reset focus timer" aria-label="Reset focus timer" class="w-10 h-10 rounded-lg border border-white/15 text-gray-300"><i class="fa-solid fa-arrow-rotate-left"></i></button>
+                        </div>
+                    </div>
+                    <p id="focusStatus" role="status" aria-live="polite" class="text-accentCyan mt-2">Ready.</p>
+                    <p class="text-gray-400 mt-1">Timers finished today: <span id="focusCount" class="font-semibold text-white">0</span></p>
+                </div>
+            </div>
+        </section>
+
+        <details class="border-y border-white/10 py-3">
+            <summary class="text-sm font-semibold text-white cursor-pointer"><i class="fa-regular fa-bell text-accentAmber mr-2"></i>Morning reminders</summary>
+            <div class="grid gap-4 sm:grid-cols-2 pt-4 text-xs">
+                <div class="space-y-3">
+                    <label class="flex items-center gap-2"><input id="inputRemindersEnabled" type="checkbox" onchange="setRemindersEnabled(this.checked)" class="accent-emerald-500 w-4 h-4">Enable morning check-in</label>
+                    <div class="flex items-center gap-3">
+                        <label for="inputReminderTime">Local time</label>
+                        <input id="inputReminderTime" type="time" value="08:00" onchange="saveReminderTime(this)" class="bg-white/5 border border-white/15 rounded px-2 py-1 text-white disabled:opacity-50" disabled>
+                    </div>
+                    <label class="flex items-center gap-2"><input id="inputSystemNotifications" type="checkbox" onchange="setSystemNotifications(this.checked)" class="accent-emerald-500 w-4 h-4" disabled>System notifications while app is open</label>
+                </div>
+                <div>
+                    <p id="reminderStatus" role="status" aria-live="polite" class="text-accentCyan">Reminders off.</p>
+                    <p class="text-gray-400 mt-2">Checks run while this app is open and visible. No scheduled push when closed or locked. For a dependable daily alarm, use Android Clock.</p>
+                </div>
+            </div>
+        </details>
 
         <!-- 7-DAY SUMMARY (TRANSPARENT MEASUREMENTS, NO MADE-UP RATINGS) -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -526,18 +594,20 @@
     <!-- SCRIPT ENGINE -->
     <script>
         const STORAGE_KEY = 'pulse_unified_tracker_v3';
+        const FOCUS_DURATION_MS = 25 * 60000;
 
         // Unified State: 100% saved in one write on every change
         let appState = {
             settings: {
                 sleepTargetHours: 7.5,
-                lastBackupTimestamp: null
+                lastBackupTimestamp: null,
+                reminders: defaultReminderSettings()
             },
             activeSession: null, // { bedtimeTimestamp, awakeIntervals: [{start, end}], currentAwakeStart: null }
             sleepRecords: [],    // Array of all past records (no cap)
             habits: [],          // [{ id, name, icon }]
             habitHistory: {},     // { "YYYY-MM-DD": { [habitId]: true } }
-            motionObservations: []
+            productivity: defaultProductivity()
         };
 
         let liveTimerInterval = null;
@@ -545,11 +615,11 @@
         let confirmDeleteIndex = null;
         let resetAllConfirmPending = false;
         let storageLoadFailed = false;
-        let motionRun = null;
-        let motionTimer = null;
-        let motionStarting = false;
         let renderedDateKey = getLocalDateKey();
         let dialogTrigger = null;
+        let reminderSending = false;
+        let notificationPermissionPending = false;
+        let reminderNotice = '';
 
         // Device Local Date Helper (Avoids UTC midnight flip)
         function getLocalDateKey(dateObj) {
@@ -581,6 +651,233 @@
         }
 
         const HABIT_ICONS = ['fa-glass-water', 'fa-person-walking', 'fa-book', 'fa-dumbbell', 'fa-ban', 'fa-brain'];
+
+        function defaultReminderSettings() {
+            return { enabled: false, time: '08:00', systemNotifications: false, dismissedDate: null, lastNotifiedDate: null, snoozedUntil: null };
+        }
+
+        function defaultProductivity(now = new Date()) {
+            return { dateKey: getLocalDateKey(now), priority: '', priorityDone: false, focusCount: 0, focus: { remainingMs: FOCUS_DURATION_MS, endsAt: null } };
+        }
+
+        function validateProductivity(value) {
+            if (value == null) return defaultProductivity();
+            if (!value || typeof value !== 'object' || typeof value.dateKey !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.dateKey) || typeof value.priority !== 'string' || value.priority.length > 160 || typeof value.priorityDone !== 'boolean' || !Number.isSafeInteger(value.focusCount) || value.focusCount < 0) throw new Error('Invalid daily focus data.');
+            const focus = value.focus;
+            if (!focus || !Number.isFinite(focus.remainingMs) || focus.remainingMs < 0 || focus.remainingMs > FOCUS_DURATION_MS || (focus.endsAt !== null && (!Number.isFinite(focus.endsAt) || focus.endsAt < 0 || focus.endsAt > Date.now() + FOCUS_DURATION_MS + 1000))) throw new Error('Invalid focus timer.');
+            return { dateKey: value.dateKey, priority: value.priority, priorityDone: value.priorityDone && Boolean(value.priority.trim()), focusCount: value.focusCount, focus: { remainingMs: focus.remainingMs, endsAt: focus.endsAt } };
+        }
+
+        function getFocusRemaining(focus, now = Date.now()) {
+            return focus.endsAt === null ? focus.remainingMs : Math.max(0, Math.min(FOCUS_DURATION_MS, focus.endsAt - now));
+        }
+
+        function settleProductivity(productivity, now = Date.now()) {
+            const today = getLocalDateKey(new Date(now));
+            let changed = false;
+            if (productivity.dateKey !== today) {
+                productivity.dateKey = today;
+                productivity.priority = '';
+                productivity.priorityDone = false;
+                productivity.focusCount = 0;
+                changed = true;
+            }
+            const focus = productivity.focus;
+            if (focus.endsAt !== null && focus.endsAt <= now) {
+                if (getLocalDateKey(new Date(focus.endsAt)) === today) productivity.focusCount++;
+                focus.endsAt = null;
+                focus.remainingMs = 0;
+                changed = true;
+            }
+            return changed;
+        }
+
+        function saveDailyPriority(value) {
+            settleProductivity(appState.productivity);
+            appState.productivity.priority = value.slice(0, 160);
+            appState.productivity.priorityDone = false;
+            saveState();
+            renderProductivity();
+        }
+
+        function completeDailyPriority(done) {
+            settleProductivity(appState.productivity);
+            appState.productivity.priorityDone = done && Boolean(appState.productivity.priority.trim());
+            saveState();
+            renderProductivity();
+        }
+
+        function toggleFocusTimer() {
+            settleProductivity(appState.productivity);
+            const focus = appState.productivity.focus;
+            if (focus.endsAt !== null) {
+                focus.remainingMs = getFocusRemaining(focus);
+                focus.endsAt = null;
+            } else {
+                if (focus.remainingMs === 0) focus.remainingMs = FOCUS_DURATION_MS;
+                focus.endsAt = Date.now() + focus.remainingMs;
+            }
+            saveState();
+            renderProductivity();
+        }
+
+        function resetFocusTimer() {
+            settleProductivity(appState.productivity);
+            appState.productivity.focus = { remainingMs: FOCUS_DURATION_MS, endsAt: null };
+            saveState();
+            renderProductivity();
+        }
+
+        function renderProductivity() {
+            if (settleProductivity(appState.productivity)) saveState();
+            const productivity = appState.productivity;
+            const input = document.getElementById('inputDailyPriority');
+            if (document.activeElement !== input) input.value = productivity.priority;
+            document.getElementById('inputPriorityDone').checked = productivity.priorityDone;
+            document.getElementById('inputPriorityDone').disabled = !productivity.priority.trim();
+            const remainingSeconds = Math.ceil(getFocusRemaining(productivity.focus) / 1000);
+            document.getElementById('focusTime').innerText = `${String(Math.floor(remainingSeconds / 60)).padStart(2, '0')}:${String(remainingSeconds % 60).padStart(2, '0')}`;
+            const running = productivity.focus.endsAt !== null;
+            const button = document.getElementById('btnFocusToggle');
+            const label = running ? 'Pause focus timer' : productivity.focus.remainingMs > 0 && productivity.focus.remainingMs < FOCUS_DURATION_MS ? 'Resume focus timer' : 'Start focus timer';
+            button.title = label;
+            button.setAttribute('aria-label', label);
+            button.innerHTML = `<i class="fa-solid ${running ? 'fa-pause' : 'fa-play'}"></i>`;
+            const message = running ? 'Timer running.' : remainingSeconds === 0 ? 'Timer finished. Take a break.' : productivity.focus.remainingMs < FOCUS_DURATION_MS ? 'Paused.' : 'Ready.';
+            const status = document.getElementById('focusStatus');
+            if (status.innerText !== message) status.innerText = message;
+            document.getElementById('focusCount').innerText = String(productivity.focusCount);
+        }
+
+        function validateReminderSettings(value) {
+            if (value == null) return defaultReminderSettings();
+            if (typeof value !== 'object' || Array.isArray(value) || typeof value.enabled !== 'boolean' || typeof value.systemNotifications !== 'boolean' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value.time)) throw new Error('Invalid reminder settings.');
+            for (const key of ['dismissedDate', 'lastNotifiedDate']) {
+                if (value[key] != null && (typeof value[key] !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value[key]))) throw new Error('Invalid reminder date.');
+            }
+            if (value.snoozedUntil != null && (!Number.isFinite(value.snoozedUntil) || value.snoozedUntil < 0)) throw new Error('Invalid reminder snooze.');
+            return { enabled: value.enabled, time: value.time, systemNotifications: value.systemNotifications, dismissedDate: value.dismissedDate ?? null, lastNotifiedDate: value.lastNotifiedDate ?? null, snoozedUntil: value.snoozedUntil ?? null };
+        }
+
+        function getMorningReminder(state, now = new Date()) {
+            const settings = state.settings.reminders;
+            const today = getLocalDateKey(now);
+            if (!settings.enabled || settings.dismissedDate === today || (settings.snoozedUntil !== null && settings.snoozedUntil > now.getTime())) return null;
+            const [hours, minutes] = settings.time.split(':').map(Number);
+            if (now.getHours() * 60 + now.getMinutes() < hours * 60 + minutes) return null;
+            if (state.activeSession) return { dateKey: today, message: 'Your sleep session is still open. Review it when you are awake.' };
+            if (state.sleepRecords.some(record => record.dateKey === today)) return null;
+            return { dateKey: today, message: 'No sleep record for today. Add your times when you are ready.' };
+        }
+
+        function renderReminderUI() {
+            const settings = appState.settings.reminders;
+            document.getElementById('inputRemindersEnabled').checked = settings.enabled;
+            const timeInput = document.getElementById('inputReminderTime');
+            if (document.activeElement !== timeInput) timeInput.value = settings.time;
+            timeInput.disabled = !settings.enabled;
+            const systemInput = document.getElementById('inputSystemNotifications');
+            systemInput.checked = settings.systemNotifications;
+            systemInput.disabled = !settings.enabled || notificationPermissionPending;
+            const permission = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
+            document.getElementById('reminderStatus').innerText = reminderNotice || (!settings.enabled ? 'Reminders off.'
+                : settings.systemNotifications && permission === 'granted' ? `Check-in at ${settings.time} · System notifications enabled while open.`
+                : `Check-in at ${settings.time} · In-app reminder only.`);
+            const reminder = getMorningReminder(appState);
+            const banner = document.getElementById('morningCheckin');
+            const wasVisible = !banner.classList.contains('hidden');
+            banner.classList.toggle('hidden', !reminder);
+            if (reminder) document.getElementById('morningCheckinMessage').innerText = reminder.message;
+            else if (wasVisible) closeMorningNotifications();
+            return reminder;
+        }
+
+        async function checkMorningReminder() {
+            if (document.hidden) return;
+            const reminder = renderReminderUI();
+            const settings = appState.settings.reminders;
+            if (!reminder || reminderSending || !settings.systemNotifications || settings.lastNotifiedDate === reminder.dateKey) return;
+            reminderSending = true;
+            try {
+                const shown = await showMorningNotification(reminder.message);
+                if (shown && getMorningReminder(appState) && appState.settings.reminders.systemNotifications) {
+                    appState.settings.reminders.lastNotifiedDate = reminder.dateKey;
+                    saveState();
+                } else if (shown) await closeMorningNotifications();
+            } catch (error) {
+                reminderNotice = 'System notification unavailable. The in-app check-in remains active.';
+                renderReminderUI();
+            } finally {
+                reminderSending = false;
+            }
+        }
+
+        function setRemindersEnabled(enabled) {
+            appState.settings.reminders.enabled = enabled;
+            reminderNotice = '';
+            if (!enabled) closeMorningNotifications();
+            saveState();
+            checkMorningReminder();
+        }
+
+        function saveReminderTime(input) {
+            if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(input.value)) {
+                input.value = appState.settings.reminders.time;
+                return;
+            }
+            appState.settings.reminders.time = input.value;
+            reminderNotice = '';
+            saveState();
+            checkMorningReminder();
+        }
+
+        async function setSystemNotifications(enabled) {
+            reminderNotice = '';
+            if (!enabled) {
+                appState.settings.reminders.systemNotifications = false;
+                closeMorningNotifications();
+            } else {
+                notificationPermissionPending = true;
+                renderReminderUI();
+                try {
+                    const result = await requestMorningNotificationPermission();
+                    appState.settings.reminders.systemNotifications = result.allowed && appState.settings.reminders.enabled;
+                    reminderNotice = result.message;
+                } catch (error) {
+                    appState.settings.reminders.systemNotifications = false;
+                    reminderNotice = 'Notifications could not be enabled. In-app reminders remain available.';
+                } finally {
+                    notificationPermissionPending = false;
+                }
+            }
+            saveState();
+            renderReminderUI();
+            checkMorningReminder();
+        }
+
+        function snoozeMorningReminder() {
+            const settings = appState.settings.reminders;
+            settings.snoozedUntil = Date.now() + 10 * 60000;
+            settings.lastNotifiedDate = null;
+            closeMorningNotifications();
+            saveState();
+            renderReminderUI();
+        }
+
+        function dismissMorningReminder() {
+            appState.settings.reminders.dismissedDate = getLocalDateKey();
+            closeMorningNotifications();
+            saveState();
+            renderReminderUI();
+        }
+
+        function reviewMorningLog() {
+            if (appState.activeSession) {
+                const button = document.getElementById('btnSleepMain');
+                button.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                button.focus({ preventScroll: true });
+            } else openManualModal();
+        }
 
         function createSleepRecord(bedTimestamp, wakeTimestamp, awakeMinutes, source = 'manual', id = Date.now(), target = appState.settings.sleepTargetHours) {
             if (![bedTimestamp, wakeTimestamp, awakeMinutes, id].every(Number.isFinite)) throw new Error('Times and awake minutes must be valid numbers.');
@@ -643,12 +940,7 @@
                 if (records.some(record => record.wakeTimestamp > session.bedtimeTimestamp)) throw new Error('Active session overlaps history.');
                 activeSession = { bedtimeTimestamp: session.bedtimeTimestamp, awakeIntervals: intervals, currentAwakeStart: awakeStart };
             }
-            const motionObservations = parsed.motionObservations ?? [];
-            if (!Array.isArray(motionObservations) || motionObservations.length > 30) throw new Error('Invalid motion observations.');
-            motionObservations.forEach(run => {
-                if (!run || !['startedAt', 'stoppedAt', 'sampleCount', 'observedMs', 'peakAcceleration'].every(key => Number.isFinite(run[key]) && run[key] >= 0) || run.stoppedAt < run.startedAt || run.stoppedAt > Date.now() || run.observedMs > run.stoppedAt - run.startedAt || !Number.isSafeInteger(run.sampleCount) || (run.lastSampleAt !== null && (!Number.isFinite(run.lastSampleAt) || run.lastSampleAt < run.startedAt || run.lastSampleAt > run.stoppedAt))) throw new Error('Invalid motion observation values.');
-            });
-            return { settings: { sleepTargetHours: target, lastBackupTimestamp: Number.isFinite(parsed.settings.lastBackupTimestamp) ? parsed.settings.lastBackupTimestamp : null }, activeSession, sleepRecords: records, habits, habitHistory: history, motionObservations: motionObservations.map(run => ({ startedAt: run.startedAt, stoppedAt: run.stoppedAt, sampleCount: run.sampleCount, observedMs: run.observedMs, peakAcceleration: run.peakAcceleration, lastSampleAt: run.lastSampleAt, stopReason: 'Saved observation; not sleep data.' })) };
+            return { settings: { sleepTargetHours: target, lastBackupTimestamp: Number.isFinite(parsed.settings.lastBackupTimestamp) ? parsed.settings.lastBackupTimestamp : null, reminders: validateReminderSettings(parsed.settings.reminders) }, activeSession, sleepRecords: records, habits, habitHistory: history, productivity: validateProductivity(parsed.productivity) };
         }
 
         function getRecentNights(now = new Date()) {
@@ -708,7 +1000,6 @@
             loadState();
             checkBackupReminder();
             renderAll();
-            initializeMotion();
             initializeDialogs();
 
             // Populate manual date-time pickers with local times
@@ -725,121 +1016,17 @@
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) {
                     renderAll();
-                } else {
-                    stopMotion('Stopped: page hidden or screen locked. Background coverage is unknown.');
                 }
             });
-            window.addEventListener('pagehide', () => stopMotion('Stopped: page closed.'));
             document.getElementById('inputHabitName').addEventListener('input', event => event.target.setCustomValidity(''));
             setInterval(() => {
                 if (!document.hidden && getLocalDateKey() !== renderedDateKey) renderAll();
+                checkMorningReminder();
             }, 30000);
+            setInterval(() => {
+                if (!document.hidden) renderProductivity();
+            }, 1000);
         };
-
-        function motionMagnitude(event) {
-            const acceleration = event.acceleration;
-            if (!acceleration || ![acceleration.x, acceleration.y, acceleration.z].every(Number.isFinite)) return null;
-            return Math.hypot(acceleration.x, acceleration.y, acceleration.z);
-        }
-
-        function addMotionSample(run, magnitude, now) {
-            if (!Number.isFinite(magnitude) || magnitude < 0 || now < run.startedAt) return false;
-            const delta = run.lastSampleAt === null ? 0 : now - run.lastSampleAt;
-            if (run.lastSampleAt !== null && delta < 200) return false;
-            if (delta > 0 && delta <= 2000) run.observedMs += delta;
-            run.lastSampleAt = now;
-            run.sampleCount++;
-            run.peakAcceleration = Math.max(run.peakAcceleration, magnitude);
-            return true;
-        }
-
-        function initializeMotion() {
-            const button = document.getElementById('btnMotion');
-            const status = document.getElementById('motionStatus');
-            button.disabled = !window.isSecureContext || !window.DeviceMotionEvent;
-            status.innerText = !window.isSecureContext ? 'Motion requires HTTPS (or localhost). Manual tracking remains available.'
-                : !window.DeviceMotionEvent ? 'Motion API unavailable on this browser. No sensor data collected.'
-                : 'Not observing. Motion access is optional and requires your permission.';
-            renderMotion();
-        }
-
-        async function toggleMotion() {
-            if (motionRun) {
-                stopMotion('Stopped by you. These observations do not indicate sleep.');
-                return;
-            }
-            if (motionStarting || !window.isSecureContext || !window.DeviceMotionEvent) return;
-            motionStarting = true;
-            const button = document.getElementById('btnMotion');
-            button.disabled = true;
-            try {
-                if (typeof window.DeviceMotionEvent.requestPermission === 'function') {
-                    const permission = await window.DeviceMotionEvent.requestPermission();
-                    if (permission !== 'granted') throw new Error('Motion permission denied. Manual tracking is unaffected.');
-                }
-                if (document.hidden) throw new Error('Motion not started: the page is not visible.');
-                motionRun = { startedAt: Date.now(), stoppedAt: null, sampleCount: 0, observedMs: 0, peakAcceleration: 0, lastSampleAt: null };
-                window.addEventListener('devicemotion', handleMotionEvent);
-                button.innerHTML = '<i class="fa-solid fa-stop mr-1"></i>Stop observing';
-                document.getElementById('motionStatus').innerText = 'Waiting for real accelerometer readings…';
-                motionTimer = setInterval(() => {
-                    if (!motionRun) return;
-                    const now = Date.now();
-                    if (!motionRun.sampleCount && now - motionRun.startedAt > 8000) {
-                        stopMotion('No linear-acceleration readings received. Sensor may be unavailable or blocked in browser settings.');
-                    } else if (motionRun.lastSampleAt !== null && now - motionRun.lastSampleAt > 3000) {
-                        document.getElementById('motionStatus').innerText = 'No recent readings. This gap is unknown, not sleep.';
-                    }
-                    renderMotion();
-                }, 1000);
-                renderMotion();
-            } catch (error) {
-                document.getElementById('motionStatus').innerText = error.message;
-            } finally {
-                motionStarting = false;
-                button.disabled = false;
-            }
-        }
-
-        function handleMotionEvent(event) {
-            if (!motionRun || document.hidden) return;
-            const magnitude = motionMagnitude(event);
-            if (magnitude === null || !addMotionSample(motionRun, magnitude, Date.now())) return;
-            document.getElementById('motionStatus').innerText = 'Receiving phone motion only. Sleep state is unknown.';
-            renderMotion();
-        }
-
-        function stopMotion(reason) {
-            if (!motionRun) return;
-            window.removeEventListener('devicemotion', handleMotionEvent);
-            clearInterval(motionTimer);
-            motionTimer = null;
-            motionRun.stoppedAt = Math.max(motionRun.startedAt, motionRun.lastSampleAt || 0, Date.now());
-            motionRun.stopReason = reason;
-            appState.motionObservations.unshift(motionRun);
-            appState.motionObservations = appState.motionObservations.slice(0, 30);
-            motionRun = null;
-            saveState();
-            document.getElementById('btnMotion').innerHTML = '<i class="fa-solid fa-play mr-1"></i>Observe motion';
-            document.getElementById('motionStatus').innerText = reason;
-            renderMotion();
-        }
-
-        function renderMotion() {
-            const run = motionRun || appState.motionObservations[0];
-            document.getElementById('motionSamples').innerText = run ? String(run.sampleCount) : '—';
-            document.getElementById('motionCoverage').innerText = run ? `${(run.observedMs / 1000).toFixed(1)}s` : '—';
-            document.getElementById('motionPeak').innerText = run?.sampleCount ? `${run.peakAcceleration.toFixed(2)} m/s²` : '—';
-            document.getElementById('motionLast').innerText = run?.lastSampleAt != null ? `${formatLocalDateDisplay(run.lastSampleAt)} ${formatLocalTime(run.lastSampleAt)}` : 'No readings';
-        }
-
-        function clearMotionObservations() {
-            if (!window.confirm('Delete all phone motion observations? Sleep records will be kept.')) return;
-            stopMotion('Stopped.');
-            appState.motionObservations = [];
-            saveState();
-            initializeMotion();
-        }
 
         function checkBackupReminder() {
             const last = appState.settings.lastBackupTimestamp;
@@ -927,6 +1114,8 @@
             renderChart();
             renderHabits();
             renderHistoryTable();
+            renderProductivity();
+            checkMorningReminder();
         }
 
         function renderHeaderUI() {
@@ -1472,7 +1661,7 @@
                 });
             });
             document.querySelectorAll('label:not([for])').forEach(label => {
-                const field = label.parentElement.querySelector('input, select');
+                const field = label.querySelector('input, select') || label.parentElement.querySelector('input, select');
                 if (field) label.htmlFor = field.id;
             });
             document.addEventListener('keydown', event => {
@@ -1539,7 +1728,6 @@
 
         // Text Backup & Restore (Reliable in Mobile Sandboxes)
         function openBackupModal() {
-            stopMotion('Stopped to include observations in your backup.');
             const output = document.getElementById('textBackupOutput');
             try {
                 output.value = storageLoadFailed ? localStorage.getItem(STORAGE_KEY) || '' : JSON.stringify(appState, null, 2);
@@ -1585,13 +1773,11 @@
                 const parsed = JSON.parse(input);
                 const restored = validateState(parsed);
                 if (!window.confirm('Replace all current records and habits with this backup?')) return;
-                stopMotion('Stopped for backup restore.');
                 appState = restored;
                 storageLoadFailed = false;
                 saveState();
                 checkBackupReminder();
                 renderAll();
-                renderMotion();
                 closeBackupModal();
             } catch (err) {
                 errBox.innerText = `Restore failed: ${err.message}`;

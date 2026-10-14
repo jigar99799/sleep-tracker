@@ -19,6 +19,29 @@ async function installApp() {
     document.getElementById('btnInstall').classList.add('hidden');
 }
 
+async function shareApp() {
+    const status = document.getElementById('shareStatus');
+    const url = document.querySelector('link[rel="canonical"]').href;
+    const shareData = { title: 'Sleep & Habit Log', text: 'A private, free sleep diary with habits and a focus timer.', url };
+    status.classList.add('hidden');
+    if (navigator.share) {
+        try {
+            await navigator.share(shareData);
+            return;
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+        }
+    }
+    try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable.');
+        await navigator.clipboard.writeText(url);
+        status.innerText = 'App link copied. Your diary data is not shared.';
+    } catch (error) {
+        status.innerText = `Share this app link: ${url}`;
+    }
+    status.classList.remove('hidden');
+}
+
 if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') {
     window.addEventListener('load', async () => {
         const status = document.getElementById('offlineStatus');
@@ -28,7 +51,7 @@ if ('serviceWorker' in navigator && window.isSecureContext && location.protocol 
             const updateStatus = () => {
                 status.innerText = navigator.onLine
                     ? 'Offline ready · Saved on this device · No subscriptions'
-                    : 'Offline · Saved on this device · Motion coverage may be interrupted';
+                    : 'Offline · Saved on this device · No subscriptions';
             };
             updateStatus();
             window.addEventListener('online', updateStatus);
@@ -37,4 +60,38 @@ if ('serviceWorker' in navigator && window.isSecureContext && location.protocol 
             status.innerText = 'Offline setup unavailable. Keep an exported backup of your data.';
         }
     });
+}
+
+async function requestMorningNotificationPermission() {
+    if (!window.isSecureContext || !('Notification' in window) || !('serviceWorker' in navigator)) {
+        return { allowed: false, message: 'System notifications unsupported here. In-app check-ins remain available.' };
+    }
+    const permission = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission;
+    if (permission !== 'granted') return { allowed: false, message: 'Notifications not allowed. In-app check-ins remain available; permissions can be changed in browser settings.' };
+    return { allowed: true, message: '' };
+}
+
+async function showMorningNotification(body) {
+    if (!('Notification' in window) || Notification.permission !== 'granted' || !('serviceWorker' in navigator)) return false;
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration?.active) throw new Error('Offline app not ready.');
+    await registration.showNotification('Sleep log check-in', {
+        body,
+        tag: 'sleep-morning-checkin',
+        icon: './assets/icon-192.png',
+        badge: './assets/icon-192.png',
+        data: { url: new URL('./sleep-tracker.html', location.href).href }
+    });
+    return true;
+}
+
+async function closeMorningNotifications() {
+    if (!('serviceWorker' in navigator)) return;
+    try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) return;
+        for (const notification of await registration.getNotifications({ tag: 'sleep-morning-checkin' })) notification.close();
+    } catch (error) {
+        return;
+    }
 }
