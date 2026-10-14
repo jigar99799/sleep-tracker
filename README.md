@@ -26,26 +26,36 @@ Alternatively, build locally and publish the contents of `dist/` to any HTTPS st
 
 ## Publish a Downloadable Release
 
-The release workflow is `.github/workflows/release.yml`. It runs only when you push a stable version tag such as `v1.0.0`. It tests, audits, and builds the app, then publishes these assets on a GitHub Release:
+The release workflow is `.github/workflows/release.yml`. Run it from GitHub's Actions screen and enter a new stable version such as `v1.1.0`. It tests, audits, and builds the selected `main` commit, then creates the protected tag and publishes these assets on a GitHub Release:
 
 - **sleep-habit-log-web.zip**: the built web app, local assets and license notices, README, and contribution guide. No personal records, credentials, or dependencies are bundled.
 - **SHA256SUMS.txt**: an integrity checksum for the ZIP. It detects a mismatched download; it is not an independent security audit or publisher signature.
 
-Only `@jigar99799` may trigger or rerun the release jobs. A tag must point to a commit already contained in `origin/main`; merge a contributor's PR first, then tag your local `main` commit. Tagging an unmerged feature branch is rejected. All tag creation, updates, and deletion are protected by a separate active repository ruleset with administrator bypass; the owner is currently the only administrator.
+Only `@jigar99799` may trigger or rerun the release jobs, and the workflow must be run from `main`. Merge a contributor's PR first, then run the release. The workflow records the exact commit that passed its checks and creates the tag for that commit, not whatever `main` happens to point to later. All tag creation, updates, and deletion remain protected by the repository ruleset; the owner is currently the only administrator. No protection is removed to enable automation.
 
-Keep other people without Write, Maintain, or Admin access if release publishing must remain owner-only. GitHub users with write-level access can create manual releases through GitHub independently of this workflow; tag protection is not a separate permission setting for every release API operation. Public contributors should use forks and PRs instead. The workflow publishes as `github-actions[bot]` using its short-lived repository token, but only after your permitted version-tag push.
+Keep other people without Write, Maintain, or Admin access if release publishing must remain owner-only. GitHub users with write-level access can create manual releases through GitHub independently of this workflow; tag protection is not a separate permission setting for every release API operation. Public contributors should use forks and PRs instead. Tag creation uses your owner-scoped secret, and the release is published as `github-actions[bot]` using its short-lived repository token after your approved manual run.
 
-To publish the first release, first commit and push the implementation changes, then tag that commit:
+### One-Time Protected-Tag Setup
 
-```sh
-git add .
-git commit -m "Simplify diary, add reminders, SEO, and downloadable releases"
-git push origin main
-git tag v1.0.0
-git push origin v1.0.0
-```
+GitHub's built-in Actions token is not your administrator identity and cannot bypass the existing tag-creation restriction. Use an owner-created credential rather than weakening that rule:
 
-Wait for **Actions > Publish Downloadable Release** to succeed. Later versions need a new tag such as `v1.0.1`; do not move or overwrite an existing release tag. If a release already exists, a rerun will not silently replace its assets.
+1. In your personal GitHub settings, open **Developer settings > Personal access tokens > Fine-grained tokens** and generate a token as `jigar99799`.
+2. Limit repository access to **jigar99799/sleep-tracker** only, with repository permission **Contents: read and write**. Use an appropriate expiry and rotate the token before it expires. Do not grant organization-wide or all-repository access.
+3. In the repository, open **Settings > Secrets and variables > Actions > New repository secret**. Name it **RELEASE_TAG_TOKEN** and paste the token into GitHub's secret field directly.
+
+Never paste this token into chat, an issue, the app, or source code. The token is exposed only to the protected-tag creation step, not the build/test scripts. That step verifies it belongs to `jigar99799`. Missing, expired, revoked, incorrectly scoped, or non-owner tokens make the run fail; there is no fallback that bypasses protections.
+
+### Publish From the GitHub Website
+
+1. Commit/push this updated workflow to `main` once. Future code changes must also be merged or pushed to `main` before release.
+2. Open **Actions > Publish Downloadable Release > Run workflow**.
+3. Select branch **main** and enter a new **version**, for example **v1.1.0**.
+4. Click **Run workflow** and wait for tests, audit, build, tag creation, and publication to succeed.
+5. Open **Releases** to find the ZIP and checksum.
+
+You no longer need `git tag` or `git push origin <tag>`. Tag pushes alone do not trigger this workflow, so automated tag creation cannot accidentally launch a second release run. Run only from `main`; choosing another branch or another user skips the release jobs.
+
+Use a fresh stable version such as `v1.1.1` for the next update. Existing tags are never moved or deleted. A tag already pointing to the same tested commit can be reused after a failed publication; an existing published release is not silently overwritten. Concurrent runs of the same version are serialized. No tag is created until tests, audit, and packaging pass; a later publication failure may leave that tag present, in which case inspect the failed run and rerun its failed jobs.
 
 After the first successful release, anyone can download without signing in:
 
@@ -53,7 +63,7 @@ After the first successful release, anyone can download without signing in:
 - Direct web ZIP: **https://github.com/jigar99799/sleep-tracker/releases/latest/download/sleep-habit-log-web.zip**
 - Checksum: **https://github.com/jigar99799/sleep-tracker/releases/latest/download/SHA256SUMS.txt**
 
-These URLs do not work until a release has actually been published. This update creates the workflow and local package; it does not create a Git tag or publish a release automatically.
+These URLs do not work until a release has actually been published. Editing the workflow does not itself run it, create a Git tag, or publish a release; you must choose **Run workflow** after setup.
 
 The ZIP is a web distribution, **not an Android APK**. Extract all files together; do not move just the HTML away from its assets. Basic desktop diary use works by opening `index.html`. For Android installation and notification/offline setup, use the HTTPS website instead. Developers should clone the repository or download GitHub's source archive; the web ZIP is not the full development project.
 
@@ -68,7 +78,7 @@ cd release
 sha256sum -c SHA256SUMS.txt
 ```
 
-The generated `release/` folder is ignored by Git; the workflow builds release assets from the tagged commit. A later GitHub Release does not automatically update Pages; the Pages website is deployed by pushes to `main`.
+The generated `release/` folder is ignored by Git; the workflow builds release assets from the selected `main` commit and tags that exact tested commit. A later GitHub Release does not automatically update Pages; the Pages website is deployed by pushes to `main`.
 
 ## Install on Android
 
