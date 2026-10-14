@@ -29,6 +29,10 @@ The release workflow is `.github/workflows/release.yml`. It runs only when you p
 - **sleep-habit-log-web.zip**: the built web app, local assets and license notices, README, and contribution guide. No personal records, credentials, or dependencies are bundled.
 - **SHA256SUMS.txt**: an integrity checksum for the ZIP. It detects a mismatched download; it is not an independent security audit or publisher signature.
 
+Only `@jigar99799` may trigger or rerun the release jobs. A tag must point to a commit already contained in `origin/main`; merge a contributor's PR first, then tag your local `main` commit. Tagging an unmerged feature branch is rejected. All tag creation, updates, and deletion are protected by a separate active repository ruleset with administrator bypass; the owner is currently the only administrator.
+
+Keep other people without Write, Maintain, or Admin access if release publishing must remain owner-only. GitHub users with write-level access can create manual releases through GitHub independently of this workflow; tag protection is not a separate permission setting for every release API operation. Public contributors should use forks and PRs instead. The workflow publishes as `github-actions[bot]` using its short-lived repository token, but only after your permitted version-tag push.
+
 To publish the first release, first commit and push the implementation changes, then tag that commit:
 
 ```sh
