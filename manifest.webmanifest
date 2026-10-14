@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Sleep & Habit Log",
+  "short_name": "Sleep Log",
+  "description": "Private sleep diary with optional foreground phone motion observations.",
+  "lang": "en",
+  "start_url": "./sleep-tracker.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090b0e",
+  "theme_color": "#090b0e",
+  "icons": [
+    { "src": "./assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,12 @@
+@import "tailwindcss";
+@config "./tailwind.config.cjs";
+@source "./sleep-tracker.html";
+@source "./pwa.js";
+
+@font-face {
+    font-family: 'Inter Variable';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('./inter-latin-wght-normal.woff2') format('woff2');
+}
