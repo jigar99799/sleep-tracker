@@ -257,3 +257,10 @@ test('sharing includes only the public link, supports copy, and respects cancell
     await vm.runInContext('shareApp()', sandbox);
     assert.equal(status.innerText, `Share this app link: ${url}`);
 });
+
+test('Google ownership verification file is present with the exact expected payload', () => {
+    const name = 'googlebee80f11dfcb6077.html';
+    const filePath = `${__dirname}/../${name}`;
+    assert.ok(fs.existsSync(filePath), `Keep ${name} in the repository root and commit it before deploying.`);
+    assert.equal(fs.readFileSync(filePath, 'utf8').trim(), `google-site-verification: ${name}`);
+});
