@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleep & Habit Log</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#090b0e',
+                        cardBg: 'rgba(16, 21, 29, 0.92)',
+                        accentGreen: '#10b981',
+                        accentCyan: '#06b6d4',
+                        accentAmber: '#f59e0b',
+                        accentRose: '#f43f5e'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #090b0e;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-card {
+            background: rgba(16, 21, 29, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.6);
+        }
+        .badge-pill {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: rgba(9, 11, 14, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 9999px; }
+    </style>
+</head>
+<body class="min-h-screen pb-16 selection:bg-accentGreen selection:text-black">
+
+    <!-- Storage Failure Warning Banner -->
+    <div id="storageAlertBanner" class="hidden bg-rose-600/90 text-white text-xs font-semibold px-4 py-2.5 text-center sticky top-0 z-50 shadow-md">
+        <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>
+        Storage unavailable: Browser storage is disabled or blocked. Changes cannot be saved across sessions.
+    </div>
+
+    <!-- Long Session Reminder Banner (>16 hours) -->
+    <div id="staleSessionBanner" class="hidden bg-amber-600/90 text-black text-xs font-bold px-4 py-2 text-center sticky top-0 z-50">
+        <i class="fa-solid fa-clock mr-1"></i>
+        Active sleep session has been running for over 16 hours. Tap "Wake Up" or adjust via Manual Log.
+    </div>
+
+    <!-- 7-Day Backup Reminder Banner -->
+    <div id="backupReminderBanner" class="hidden bg-indigo-950/90 border-b border-indigo-500/30 text-indigo-200 text-xs px-4 py-2 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-cloud-arrow-up text-accentCyan"></i>
+            <span>No data backup created in the last 7 days. Back up your log to avoid loss.</span>
+        </div>
+        <button onclick="openBackupModal()" class="underline font-semibold hover:text-white">Back Up Now</button>
+    </div>
+
+    <!-- Top Navigation -->
+    <header class="glass-card border-b border-white/10 px-4 lg:px-8 py-3.5 mb-6 sticky top-0 z-40">
+        <div class="max-w-5xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-accentGreen text-sm">
+                    <i class="fa-solid fa-bed"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                        Sleep & Habit Log
+                    </h1>
+                    <p class="text-[11px] text-gray-400">Physical Timestamps • Local Timezone • Zero Estimation</p>
+                </div>
+            </div>
+
+            <!-- Header Controls -->
+            <div class="flex items-center space-x-2">
+                <button onclick="openTargetModal()" class="bg-white/5 hover:bg-white/10 text-gray-300 text-xs px-2.5 py-1.5 rounded-lg border border-white/10 transition flex items-center gap-1.5" title="Change Sleep Target">
+                    <i class="fa-solid fa-bullseye text-accentCyan text-xs"></i>
+                    <span>Target: <strong id="headerTargetLabel" class="text-white">7.5h</strong></span>
+                </button>
+                <button onclick="openBackupModal()" class="bg-white/5 hover:bg-white/10 text-gray-300 text-xs px-2.5 py-1.5 rounded-lg border border-white/10 transition flex items-center gap-1.5" title="Copy / Restore Data">
+                    <i class="fa-solid fa-box-archive text-accentAmber text-xs"></i>
+                    <span>Backup</span>
+                </button>
+                <button onclick="openHabitModal()" class="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>Add Habit</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 lg:px-8 space-y-6">
+
+        <!-- 1-TAP SLEEP STAMP CLOCK -->
+        <div class="glass-card rounded-xl p-5 border border-white/10">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="font-bold text-white text-base">Sleep Timestamp Clock</h2>
+                        <span id="sessionStatusBadge" class="badge-pill bg-white/10 text-gray-300">Ready</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-0.5">Device timestamps saved immediately. Safe to close browser anytime.</p>
+                </div>
+
+                <!-- Clock Actions -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button id="btnSleepMain" onclick="handleSleepMainToggle()" class="px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition bg-emerald-600 hover:bg-emerald-500 text-white shadow-md">
+                        <i id="btnSleepMainIcon" class="fa-solid fa-moon"></i>
+                        <span id="btnSleepMainLabel">Going to Sleep Now</span>
+                    </button>
+
+                    <!-- Real Awake Tracking: Awake in Bed / Back Asleep -->
+                    <button id="btnAwakeToggle" onclick="handleAwakeToggle()" class="hidden px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold transition items-center gap-1.5">
+                        <i id="btnAwakeIcon" class="fa-solid fa-sun"></i>
+                        <span id="btnAwakeLabel">Awake in Bed</span>
+                    </button>
+
+                    <!-- Manual Entry -->
+                    <button onclick="openManualModal()" class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 text-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-pen-to-square text-accentAmber text-xs"></i>
+                        <span>Manual Log</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Current Session / Latest Session Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-4 text-xs">
+                <!-- Bedtime -->
+                <div class="bg-black/40 p-3.5 rounded-lg border border-white/5">
+                    <span class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block flex items-center gap-1">
+                        <i class="fa-solid fa-moon text-indigo-400"></i> Bedtime
+                    </span>
+                    <div class="mt-1">
+                        <span id="displayBedtime" class="text-xl font-bold text-white">--:--</span>
+                    </div>
+                    <span id="displayBedDate" class="text-[11px] text-gray-400 mt-0.5 block truncate">No active sleep</span>
+                </div>
+
+                <!-- Wake-Up -->
+                <div class="bg-black/40 p-3.5 rounded-lg border border-white/5">
+                    <span class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block flex items-center gap-1">
+                        <i class="fa-solid fa-sun text-amber-400"></i> Wake-up
+                    </span>
+                    <div class="mt-1">
+                        <span id="displayWaketime" class="text-xl font-bold text-emerald-400">--:--</span>
+                    </div>
+                    <span id="displayWakeDate" class="text-[11px] text-gray-400 mt-0.5 block truncate">Tap button on wake</span>
+                </div>
+
+                <!-- Net Duration & Timer -->
+                <div class="bg-black/40 p-3.5 rounded-lg border border-white/5">
+                    <span class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block flex items-center gap-1">
+                        <i class="fa-solid fa-clock text-accentCyan"></i> Sleep Duration
+                    </span>
+                    <div class="mt-1 flex items-baseline gap-1.5">
+                        <span id="displayDuration" class="text-xl font-bold text-accentCyan">--</span>
+                        <span id="displayLiveTimer" class="hidden text-[11px] font-mono text-emerald-400"></span>
+                    </div>
+                    <span id="displayAwakeDeduction" class="text-[11px] text-gray-400 mt-0.5 block">Awake time: 0m</span>
+                </div>
+
+                <!-- Efficiency -->
+                <div class="bg-black/40 p-3.5 rounded-lg border border-white/5">
+                    <span class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block flex items-center gap-1">
+                        <i class="fa-solid fa-percent text-gray-300"></i> Sleep Efficiency
+                    </span>
+                    <div class="mt-1">
+                        <span id="displayEfficiency" class="text-xl font-bold text-white">--</span>
+                    </div>
+                    <span id="displayEfficiencyDesc" class="text-[11px] text-gray-400 mt-0.5 block">Time asleep / Time in bed</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7-DAY SUMMARY (TRANSPARENT MEASUREMENTS, NO MADE-UP RATINGS) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div class="glass-card rounded-lg p-3.5 border border-white/5 text-center">
+                <span class="text-[10px] text-gray-400 uppercase font-semibold block">7-Day Avg Sleep</span>
+                <span id="metric7DayAvg" class="text-lg font-bold text-white mt-1 block">--</span>
+                <span class="text-[10px] text-gray-500 mt-0.5 block">Latest 7 nights</span>
+            </div>
+
+            <div class="glass-card rounded-lg p-3.5 border border-white/5 text-center">
+                <span class="text-[10px] text-gray-400 uppercase font-semibold block">Nights at Target</span>
+                <span id="metricTargetNights" class="text-lg font-bold text-accentGreen mt-1 block">--</span>
+                <span class="text-[10px] text-gray-500 mt-0.5 block" id="metricTargetSubtext">Goal: 7.5h</span>
+            </div>
+
+            <div class="glass-card rounded-lg p-3.5 border border-white/5 text-center">
+                <span class="text-[10px] text-gray-400 uppercase font-semibold block">Weekly Sleep Debt</span>
+                <span id="metricSleepDebt" class="text-lg font-bold text-accentAmber mt-1 block">0.0h</span>
+                <span class="text-[10px] text-gray-500 mt-0.5 block">Deficit vs target</span>
+            </div>
+
+            <div class="glass-card rounded-lg p-3.5 border border-white/5 text-center">
+                <span class="text-[10px] text-gray-400 uppercase font-semibold block">Bedtime Spread</span>
+                <span id="metricBedtimeSpread" class="text-lg font-bold text-accentCyan mt-1 block">--</span>
+                <span class="text-[10px] text-gray-500 mt-0.5 block">Spread across week</span>
+            </div>
+        </div>
+
+        <!-- 7-DAY CHART & HABITS -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- 7-DAY BAR CHART -->
+            <div class="lg:col-span-7 glass-card rounded-xl p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
+                        <div>
+                            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-chart-simple text-accentCyan"></i>
+                                Real 7-Night Sleep Duration
+                            </h3>
+                            <p class="text-[11px] text-gray-400">Duration plotted from your logged sleep</p>
+                        </div>
+                        <span id="chartTargetBadge" class="text-[11px] bg-white/5 text-gray-300 border border-white/10 px-2 py-0.5 rounded">
+                            Target: 7.5h
+                        </span>
+                    </div>
+
+                    <div class="relative h-60 w-full">
+                        <canvas id="sleepDurationChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-400">
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded bg-emerald-500 inline-block"></span> Met Target
+                        <span class="w-2.5 h-2.5 rounded bg-cyan-500 inline-block ml-2"></span> Under Target
+                    </span>
+                    <span class="text-gray-500">Updates on every logged session</span>
+                </div>
+            </div>
+
+            <!-- DAILY HABITS CHECKLIST -->
+            <div class="lg:col-span-5 glass-card rounded-xl p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
+                        <div>
+                            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-accentGreen"></i>
+                                Daily Habits
+                            </h3>
+                            <p class="text-[11px] text-gray-400">Resets daily • Streaks from real check-offs</p>
+                        </div>
+                        <span id="habitsCountBadge" class="badge-pill bg-white/5 text-gray-300 border border-white/10">0 / 0</span>
+                    </div>
+
+                    <!-- Automatic Sleep Target Habit (Always computed, not manually checked) -->
+                    <div id="autoSleepHabitItem" class="mb-2.5 p-2.5 rounded-lg border border-white/10 bg-white/5 flex items-center justify-between text-xs">
+                        <div class="flex items-center space-x-2.5">
+                            <span id="autoSleepHabitIcon" class="w-5 h-5 rounded flex items-center justify-center border border-white/20 text-gray-500 text-[10px]">
+                                <i class="fa-solid fa-bed"></i>
+                            </span>
+                            <div>
+                                <span class="font-medium text-white block">Sleep Target Met</span>
+                                <span class="text-[10px] text-gray-400">Auto-calculated from sleep log</span>
+                            </div>
+                        </div>
+                        <span id="autoSleepHabitStreak" class="text-amber-400 font-bold text-xs flex items-center gap-1">
+                            <i class="fa-solid fa-fire text-[10px]"></i> 0d
+                        </span>
+                    </div>
+
+                    <!-- Custom Habits List -->
+                    <div id="habitItemsContainer" class="space-y-2 max-h-[240px] overflow-y-auto pr-1">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <div id="habitsEmptyMsg" class="hidden text-center py-6 text-xs text-gray-500">
+                        No custom habits created yet. Tap "Add Habit" above to start your first streak.
+                    </div>
+                </div>
+
+                <!-- Daily Progress -->
+                <div class="mt-4 pt-3 border-t border-white/10">
+                    <div class="flex justify-between items-center text-[11px] text-gray-400 mb-1.5">
+                        <span>Today's Completion</span>
+                        <span id="habitProgressPercent" class="font-bold text-white">0%</span>
+                    </div>
+                    <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                        <div id="habitProgressBarInner" class="bg-accentGreen h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SLEEP LOG TABLE (FULL HISTORY RETAINED) -->
+        <div class="glass-card rounded-xl p-5 border border-white/10">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-2 border-b border-white/10">
+                <div>
+                    <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-table-list text-gray-400"></i>
+                        Sleep History Log
+                    </h3>
+                    <p class="text-[11px] text-gray-400">Full history preserved in browser memory</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="btnResetAll" onclick="handleResetAllClick()" class="text-xs text-gray-400 hover:text-rose-400 transition border border-white/10 px-2.5 py-1 rounded">
+                        <i class="fa-solid fa-trash-can mr-1"></i> Reset Log
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs min-w-[560px]">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-white/10 pb-2">
+                            <th class="py-2 px-3 font-semibold">Date</th>
+                            <th class="py-2 px-3 font-semibold">Bedtime</th>
+                            <th class="py-2 px-3 font-semibold">Wake-up</th>
+                            <th class="py-2 px-3 font-semibold">Duration</th>
+                            <th class="py-2 px-3 font-semibold">Awake Deducted</th>
+                            <th class="py-2 px-3 font-semibold">Efficiency</th>
+                            <th class="py-2 px-3 font-semibold">Target Met</th>
+                            <th class="py-2 px-3 font-semibold text-right">Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sleepHistoryTableBody" class="divide-y divide-white/5 text-gray-300">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MANUAL ENTRY MODAL (WITH RIGID VALIDATION) -->
+    <div id="manualModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden p-4">
+        <div class="glass-card rounded-xl p-6 w-full max-w-md border border-white/15 relative">
+            <button onclick="closeManualModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            
+            <h3 class="text-sm font-bold text-white mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square text-accentAmber"></i>
+                Manual Sleep Log
+            </h3>
+            <p class="text-[11px] text-gray-400 mb-4">Add or backfill a session with strict validation against future dates and overlaps.</p>
+
+            <div id="manualErrorMsg" class="hidden mb-3 p-2 bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs rounded"></div>
+
+            <form onsubmit="handleManualFormSubmit(event)" class="space-y-3.5 text-xs">
+                <div>
+                    <label class="block text-gray-300 mb-1 font-medium">Bedtime</label>
+                    <input type="datetime-local" id="inputManualBed" required class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-accentAmber">
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 mb-1 font-medium">Wake-up Time</label>
+                    <input type="datetime-local" id="inputManualWake" required class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-accentAmber">
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 mb-1 font-medium">Actual Minutes Awake in Bed (Optional)</label>
+                    <input type="number" id="inputManualAwakeMins" min="0" max="600" value="0" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-accentAmber">
+                    <span class="text-[10px] text-gray-500">Only input real minutes you spent awake in bed.</span>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeManualModal()" class="px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white">Cancel</button>
+                    <button type="submit" class="px-3.5 py-1.5 rounded-lg bg-accentAmber hover:bg-amber-400 text-black font-bold">Save Sleep Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD HABIT MODAL -->
+    <div id="habitModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden p-4">
+        <div class="glass-card rounded-xl p-6 w-full max-w-md border border-white/15 relative">
+            <button onclick="closeHabitModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            
+            <h3 class="text-sm font-bold text-white mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-plus-circle text-accentGreen"></i>
+                Add Custom Habit
+            </h3>
+            <p class="text-[11px] text-gray-400 mb-4">Starts empty. Streaks count only from real daily check-offs.</p>
+
+            <form onsubmit="handleCreateHabit(event)" class="space-y-3.5 text-xs">
+                <div>
+                    <label class="block text-gray-300 mb-1 font-medium">Habit Name</label>
+                    <input type="text" id="inputHabitName" required placeholder="e.g. Drink 2L water, Morning walk" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-accentGreen">
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 mb-1 font-medium">Icon</label>
+                    <select id="inputHabitIcon" class="w-full bg-neutral-900 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-accentGreen">
+                        <option value="fa-glass-water">Water / Hydration</option>
+                        <option value="fa-person-walking">Walking / Outdoor Movement</option>
+                        <option value="fa-book">Reading / Studying</option>
+                        <option value="fa-dumbbell">Workout / Exercise</option>
+                        <option value="fa-ban">No Screens Before Bed</option>
+                        <option value="fa-brain">Mindfulness / Meditation</option>
+                    </select>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeHabitModal()" class="px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white">Cancel</button>
+                    <button type="submit" class="px-3.5 py-1.5 rounded-lg bg-accentGreen hover:bg-emerald-400 text-black font-bold">Save Habit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TARGET MODAL -->
+    <div id="targetModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden p-4">
+        <div class="glass-card rounded-xl p-6 w-full max-w-md border border-white/15 relative text-xs">
+            <button onclick="closeTargetModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            
+            <h3 class="text-sm font-bold text-white mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-bullseye text-accentCyan"></i>
+                Sleep Target Setting
+            </h3>
+            <p class="text-[11px] text-gray-400 mb-4">Used to calculate Sleep Debt and target attainment.</p>
+
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-gray-300 font-medium">Daily Target</label>
+                        <span id="modalTargetValue" class="text-accentGreen font-bold text-sm">7.5h</span>
+                    </div>
+                    <input type="range" id="inputTargetSlider" min="5" max="10" step="0.25" value="7.5" oninput="updateSliderLabel(this.value)" class="w-full accent-emerald-500 cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                        <span>5.0h</span>
+                        <span>7.5h</span>
+                        <span>10.0h</span>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeTargetModal()" class="px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white">Cancel</button>
+                    <button type="button" onclick="saveTargetSetting()" class="px-3.5 py-1.5 rounded-lg bg-accentCyan hover:bg-cyan-400 text-black font-bold">Apply Target</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BACKUP / RESTORE TEXT MODAL (WORKS IN PUBLISHED PAGES & SANDBOXES) -->
+    <div id="backupModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden p-4">
+        <div class="glass-card rounded-xl p-6 w-full max-w-lg border border-white/15 relative text-xs">
+            <button onclick="closeBackupModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            
+            <h3 class="text-sm font-bold text-white mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-box-archive text-accentAmber"></i>
+                Backup & Restore (Text-Based)
+            </h3>
+            <p class="text-[11px] text-gray-400 mb-3">Copy your raw JSON data to safeguard it, or paste an existing backup below to restore.</p>
+
+            <div class="space-y-3">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-gray-300 font-semibold">Your Data Backup JSON</span>
+                        <button onclick="copyBackupToClipboard()" id="btnCopyBackup" class="text-accentCyan hover:underline font-medium">
+                            <i class="fa-regular fa-copy mr-1"></i> Copy to Clipboard
+                        </button>
+                    </div>
+                    <textarea id="textBackupOutput" readonly rows="5" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 font-mono text-[11px] text-gray-300 select-all"></textarea>
+                    <span id="copySuccessMsg" class="hidden text-accentGreen text-[10px] mt-0.5 block font-semibold">Copied to clipboard!</span>
+                </div>
+
+                <div class="pt-2 border-t border-white/10">
+                    <span class="text-gray-300 font-semibold block mb-1">Restore from Past Backup</span>
+                    <textarea id="textRestoreInput" placeholder="Paste your previously saved JSON here..." rows="3" class="w-full bg-black/50 border border-white/10 rounded-lg p-2 font-mono text-[11px] text-gray-300 focus:outline-none focus:border-accentAmber"></textarea>
+                    <div id="restoreErrorMsg" class="hidden text-rose-400 text-[10px] mt-1"></div>
+                    <div class="mt-2 flex justify-end">
+                        <button onclick="handleRestoreSubmit()" class="px-3.5 py-1.5 rounded-lg bg-accentAmber hover:bg-amber-400 text-black font-bold">
+                            Restore State
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-3 mt-3 border-t border-white/10 flex justify-end">
+                <button type="button" onclick="closeBackupModal()" class="px-3.5 py-1.5 rounded-lg bg-white/10 text-white">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT ENGINE -->
+    <script>
+        const STORAGE_KEY = 'pulse_unified_tracker_v3';
+
+        // Unified State: 100% saved in one write on every change
+        let appState = {
+            settings: {
+                sleepTargetHours: 7.5,
+                lastBackupTimestamp: null
+            },
+            activeSession: null, // { bedtimeTimestamp, awakeIntervals: [{start, end}], currentAwakeStart: null }
+            sleepRecords: [],    // Array of all past records (no cap)
+            habits: [],          // [{ id, name, icon }]
+            habitHistory: {}     // { "YYYY-MM-DD": { [habitId]: true } }
+        };
+
+        let liveTimerInterval = null;
+        let sleepChartInstance = null;
+        let confirmDeleteIndex = null;
+        let resetAllConfirmPending = false;
+
+        // Device Local Date Helper (Avoids UTC midnight flip)
+        function getLocalDateKey(dateObj) {
+            const d = dateObj || new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Format short time in local device format
+        function formatLocalTime(timestamp) {
+            return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Format local date display
+        function formatLocalDateDisplay(timestamp) {
+            return new Date(timestamp).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+
+        // Unified State Loading & Saving with Failure Warning
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    appState = {
+                        ...appState,
+                        ...parsed,
+                        settings: { ...appState.settings, ...(parsed.settings || {}) }
+                    };
+                }
+            } catch (err) {
+                console.error("Storage load error", err);
+                showStorageWarning();
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                hideStorageWarning();
+            } catch (err) {
+                console.error("Storage save failed", err);
+                showStorageWarning();
+            }
+        }
+
+        function showStorageWarning() {
+            document.getElementById('storageAlertBanner').classList.remove('hidden');
+        }
+
+        function hideStorageWarning() {
+            document.getElementById('storageAlertBanner').classList.add('hidden');
+        }
+
+        // Window Init
+        window.onload = function() {
+            loadState();
+            checkBackupReminder();
+            renderAll();
+
+            // Populate manual date-time pickers with local times
+            const now = new Date();
+            const eightHoursAgo = new Date(now.getTime() - 8 * 60 * 60 * 1000);
+            const toLocalInputValue = (d) => {
+                const pad = (n) => String(n).padStart(2, '0');
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            };
+            document.getElementById('inputManualBed').value = toLocalInputValue(eightHoursAgo);
+            document.getElementById('inputManualWake').value = toLocalInputValue(now);
+
+            // Re-render when tab visibility changes or user returns on a new day
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    renderAll();
+                }
+            });
+        };
+
+        function checkBackupReminder() {
+            const last = appState.settings.lastBackupTimestamp;
+            const now = Date.now();
+            const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+            const reminderBanner = document.getElementById('backupReminderBanner');
+            if (!last || (now - last) > sevenDaysMs) {
+                reminderBanner.classList.remove('hidden');
+            } else {
+                reminderBanner.classList.add('hidden');
+            }
+        }
+
+        // Live Sleep Clock Operations
+        function handleSleepMainToggle() {
+            const now = Date.now();
+
+            if (!appState.activeSession) {
+                // Starting sleep session
+                appState.activeSession = {
+                    bedtimeTimestamp: now,
+                    awakeIntervals: [],
+                    currentAwakeStart: null
+                };
+                saveState();
+                renderAll();
+            } else {
+                // Finalizing wake-up
+                let session = appState.activeSession;
+                // If user was marked awake when tapping wake up, close awake interval
+                if (session.currentAwakeStart) {
+                    session.awakeIntervals.push({
+                        start: session.currentAwakeStart,
+                        end: now,
+                        durationMs: Math.max(0, now - session.currentAwakeStart)
+                    });
+                    session.currentAwakeStart = null;
+                }
+
+                const totalBedMs = Math.max(0, now - session.bedtimeTimestamp);
+                const totalAwakeMs = (session.awakeIntervals || []).reduce((sum, item) => sum + (item.durationMs || 0), 0);
+                const netSleepMs = Math.max(0, totalBedMs - totalAwakeMs);
+
+                const durationHours = parseFloat((netSleepMs / (1000 * 60 * 60)).toFixed(2));
+                const inBedHours = parseFloat((totalBedMs / (1000 * 60 * 60)).toFixed(2));
+                const awakeMins = Math.round(totalAwakeMs / (1000 * 60));
+
+                const totalMinutes = Math.round(netSleepMs / (1000 * 60));
+                const hoursPart = Math.floor(totalMinutes / 60);
+                const minsPart = totalMinutes % 60;
+
+                const efficiency = inBedHours > 0 ? Math.min(100, Math.round((durationHours / inBedHours) * 100)) : 100;
+                const goalMet = durationHours >= appState.settings.sleepTargetHours;
+
+                const wakeDate = new Date(now);
+                const bedDate = new Date(session.bedtimeTimestamp);
+
+                const newRecord = {
+                    id: now,
+                    dateKey: getLocalDateKey(wakeDate),
+                    displayDate: formatLocalDateDisplay(now),
+                    bedTimestamp: session.bedtimeTimestamp,
+                    wakeTimestamp: now,
+                    bedtimeStr: formatLocalTime(session.bedtimeTimestamp),
+                    waketimeStr: formatLocalTime(now),
+                    durationHours: durationHours,
+                    durationText: `${hoursPart}h ${minsPart}m`,
+                    awakeMinutes: awakeMins,
+                    efficiency: efficiency,
+                    goalMet: goalMet
+                };
+
+                appState.sleepRecords.unshift(newRecord);
+                appState.activeSession = null;
+                saveState();
+                renderAll();
+            }
+        }
+
+        // Real Awake Tracker: Awake in Bed <-> Back Asleep
+        function handleAwakeToggle() {
+            if (!appState.activeSession) return;
+            const now = Date.now();
+            let session = appState.activeSession;
+
+            if (!session.currentAwakeStart) {
+                // User is awake in bed
+                session.currentAwakeStart = now;
+            } else {
+                // User is back asleep
+                session.awakeIntervals.push({
+                    start: session.currentAwakeStart,
+                    end: now,
+                    durationMs: Math.max(0, now - session.currentAwakeStart)
+                });
+                session.currentAwakeStart = null;
+            }
+            saveState();
+            renderSleepClockUI();
+        }
+
+        function renderAll() {
+            renderHeaderUI();
+            renderSleepClockUI();
+            renderSummaryMetrics();
+            renderChart();
+            renderHabits();
+            renderHistoryTable();
+        }
+
+        function renderHeaderUI() {
+            document.getElementById('headerTargetLabel').innerText = `${appState.settings.sleepTargetHours}h`;
+            document.getElementById('chartTargetBadge').innerText = `Target: ${appState.settings.sleepTargetHours}h`;
+            document.getElementById('metricTargetSubtext').innerText = `Goal: ${appState.settings.sleepTargetHours}h`;
+        }
+
+        function renderSleepClockUI() {
+            const btnMain = document.getElementById('btnSleepMain');
+            const labelMain = document.getElementById('btnSleepMainLabel');
+            const iconMain = document.getElementById('btnSleepMainIcon');
+            const statusBadge = document.getElementById('sessionStatusBadge');
+            const btnAwake = document.getElementById('btnAwakeToggle');
+            const btnAwakeLabel = document.getElementById('btnAwakeLabel');
+            const btnAwakeIcon = document.getElementById('btnAwakeIcon');
+            const liveTimer = document.getElementById('displayLiveTimer');
+            const staleBanner = document.getElementById('staleSessionBanner');
+
+            if (liveTimerInterval) {
+                clearInterval(liveTimerInterval);
+                liveTimerInterval = null;
+            }
+
+            if (appState.activeSession) {
+                const session = appState.activeSession;
+                btnMain.className = "px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition bg-amber-500 hover:bg-amber-400 text-black shadow-md";
+                labelMain.innerText = "I'm Awake Now (Stop Sleep)";
+                iconMain.className = "fa-solid fa-sun";
+
+                statusBadge.innerText = "Active Sleep Session";
+                statusBadge.className = "badge-pill bg-amber-500/20 text-amber-300 border border-amber-500/40";
+
+                // Awake button handling
+                btnAwake.classList.remove('hidden');
+                btnAwake.classList.add('flex');
+                if (session.currentAwakeStart) {
+                    btnAwakeLabel.innerText = "Back Asleep";
+                    btnAwakeIcon.className = "fa-solid fa-moon";
+                    btnAwake.className = "px-3 py-2 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-semibold transition flex items-center gap-1.5";
+                } else {
+                    btnAwakeLabel.innerText = "Awake in Bed";
+                    btnAwakeIcon.className = "fa-solid fa-sun";
+                    btnAwake.className = "px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold transition flex items-center gap-1.5";
+                }
+
+                document.getElementById('displayBedtime').innerText = formatLocalTime(session.bedtimeTimestamp);
+                document.getElementById('displayBedDate').innerText = formatLocalDateDisplay(session.bedtimeTimestamp);
+                document.getElementById('displayWaketime').innerText = "In Progress";
+                document.getElementById('displayWakeDate').innerText = "Tracking live";
+
+                // Live timer function
+                liveTimer.classList.remove('hidden');
+                const updateLive = () => {
+                    const elapsedMs = Math.max(0, Date.now() - session.bedtimeTimestamp);
+                    const totalSecs = Math.floor(elapsedMs / 1000);
+                    const hrs = Math.floor(totalSecs / 3600);
+                    const mins = Math.floor((totalSecs % 3600) / 60);
+                    const secs = totalSecs % 60;
+                    liveTimer.innerText = `(${hrs}h ${mins}m ${secs}s)`;
+                    document.getElementById('displayDuration').innerText = `${hrs}h ${mins}m`;
+
+                    // Check for > 16 hours forgotten session
+                    if (elapsedMs > 16 * 60 * 60 * 1000) {
+                        staleBanner.classList.remove('hidden');
+                    } else {
+                        staleBanner.classList.add('hidden');
+                    }
+                };
+                updateLive();
+                liveTimerInterval = setInterval(updateLive, 1000);
+
+                // Calculate cumulative awake time so far
+                let cumulativeAwakeMs = (session.awakeIntervals || []).reduce((acc, cur) => acc + (cur.durationMs || 0), 0);
+                if (session.currentAwakeStart) {
+                    cumulativeAwakeMs += (Date.now() - session.currentAwakeStart);
+                }
+                const awakeMins = Math.round(cumulativeAwakeMs / 60000);
+                document.getElementById('displayAwakeDeduction').innerText = `Awake time: ${awakeMins}m deducted`;
+                document.getElementById('displayEfficiency').innerText = "Recording...";
+                document.getElementById('displayEfficiencyDesc').innerText = "Computed on morning wake-up";
+
+            } else {
+                staleBanner.classList.add('hidden');
+                btnMain.className = "px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition bg-emerald-600 hover:bg-emerald-500 text-white shadow-md";
+                labelMain.innerText = "Going to Sleep Now";
+                iconMain.className = "fa-solid fa-moon";
+
+                statusBadge.innerText = "Ready";
+                statusBadge.className = "badge-pill bg-white/10 text-gray-300";
+
+                btnAwake.classList.add('hidden');
+                btnAwake.classList.remove('flex');
+                liveTimer.classList.add('hidden');
+
+                const latest = appState.sleepRecords[0];
+                if (latest) {
+                    document.getElementById('displayBedtime').innerText = latest.bedtimeStr;
+                    document.getElementById('displayBedDate').innerText = latest.displayDate;
+                    document.getElementById('displayWaketime').innerText = latest.waketimeStr;
+                    document.getElementById('displayWakeDate').innerText = latest.displayDate;
+                    document.getElementById('displayDuration').innerText = latest.durationText;
+                    document.getElementById('displayAwakeDeduction').innerText = `Awake time: ${latest.awakeMinutes || 0}m deducted`;
+                    document.getElementById('displayEfficiency').innerText = `${latest.efficiency || 100}%`;
+                    document.getElementById('displayEfficiencyDesc').innerText = latest.goalMet 
+                        ? `Target met (≥ ${appState.settings.sleepTargetHours}h)` 
+                        : `Under target (< ${appState.settings.sleepTargetHours}h)`;
+                } else {
+                    document.getElementById('displayBedtime').innerText = "--:--";
+                    document.getElementById('displayBedDate').innerText = "No records logged yet";
+                    document.getElementById('displayWaketime').innerText = "--:--";
+                    document.getElementById('displayWakeDate').innerText = "Tap button at bedtime";
+                    document.getElementById('displayDuration').innerText = "--";
+                    document.getElementById('displayAwakeDeduction').innerText = "Awake time: 0m";
+                    document.getElementById('displayEfficiency').innerText = "--";
+                    document.getElementById('displayEfficiencyDesc').innerText = "Awaiting first session";
+                }
+            }
+        }
+
+        // Summary Metrics Calculation (Strictly Transparent, No Fallbacks)
+        function renderSummaryMetrics() {
+            const records = appState.sleepRecords.slice(0, 7); // Latest 7 for summary
+
+            if (records.length === 0) {
+                document.getElementById('metric7DayAvg').innerText = '--';
+                document.getElementById('metricTargetNights').innerText = '--';
+                document.getElementById('metricSleepDebt').innerText = '0.0h';
+                document.getElementById('metricBedtimeSpread').innerText = '--';
+                return;
+            }
+
+            // 1. Average Sleep
+            const totalHours = records.reduce((sum, r) => sum + r.durationHours, 0);
+            const avg = (totalHours / records.length).toFixed(1);
+            document.getElementById('metric7DayAvg').innerText = `${avg} hrs`;
+
+            // 2. Nights at target
+            const metCount = records.filter(r => r.goalMet).length;
+            document.getElementById('metricTargetNights').innerText = `${metCount} / ${records.length}`;
+
+            // 3. Sleep Debt vs Target
+            const target = appState.settings.sleepTargetHours;
+            const totalDebt = records.reduce((sum, r) => sum + Math.max(0, target - r.durationHours), 0);
+            document.getElementById('metricSleepDebt').innerText = totalDebt > 0 ? `+${totalDebt.toFixed(1)}h` : '0.0h';
+
+            // 4. Bedtime Spread (Standard deviation in minutes across records)
+            if (records.length >= 2) {
+                const bedMinutes = records.map(r => {
+                    const d = new Date(r.bedTimestamp);
+                    let m = d.getHours() * 60 + d.getMinutes();
+                    // Normalize late night vs past midnight (e.g. 23:30 vs 00:30)
+                    if (m < 720) m += 1440;
+                    return m;
+                });
+                const minSpread = Math.min(...bedMinutes);
+                const maxSpread = Math.max(...bedMinutes);
+                const spreadDiff = maxSpread - minSpread;
+                document.getElementById('metricBedtimeSpread').innerText = `±${spreadDiff}m`;
+            } else {
+                document.getElementById('metricBedtimeSpread').innerText = 'Need 2+ nights';
+            }
+        }
+
+        // Chart.js 7-Night Render
+        function renderChart() {
+            const ctx = document.getElementById('sleepDurationChart').getContext('2d');
+            const recent7 = appState.sleepRecords.slice(0, 7).reverse(); // chronological
+
+            const labels = recent7.map(r => r.displayDate ? r.displayDate.split(',')[0] : 'Night');
+            const dataValues = recent7.map(r => r.durationHours);
+            const target = appState.settings.sleepTargetHours;
+
+            if (sleepChartInstance) {
+                sleepChartInstance.destroy();
+            }
+
+            sleepChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.length > 0 ? labels : ['No records'],
+                    datasets: [{
+                        label: 'Duration (Hours)',
+                        data: dataValues.length > 0 ? dataValues : [0],
+                        backgroundColor: dataValues.map(v => v >= target ? 'rgba(16, 185, 129, 0.6)' : 'rgba(6, 182, 212, 0.5)'),
+                        borderColor: dataValues.map(v => v >= target ? '#10b981' : '#06b6d4'),
+                        borderWidth: 1.5,
+                        borderRadius: 6,
+                        maxBarThickness: 38
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8', font: { size: 11 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8', font: { size: 11 } },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Real Habit Streaks Calculation from habitHistory
+        function calculateRealHabitStreak(habitId) {
+            let streak = 0;
+            const now = new Date();
+            let checkDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            // Check yesterday first if today is not yet checked
+            const todayKey = getLocalDateKey(checkDate);
+            const isDoneToday = appState.habitHistory[todayKey] && appState.habitHistory[todayKey][habitId];
+            if (!isDoneToday) {
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+
+            while (true) {
+                const key = getLocalDateKey(checkDate);
+                if (appState.habitHistory[key] && appState.habitHistory[key][habitId]) {
+                    streak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            return streak;
+        }
+
+        // Sleep Habit Real Streak
+        function calculateSleepTargetStreak() {
+            let streak = 0;
+            // Iterate over historical sleep records chronologically
+            for (let i = 0; i < appState.sleepRecords.length; i++) {
+                if (appState.sleepRecords[i].goalMet) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+            return streak;
+        }
+
+        // Habits Rendering with Auto-Daily Rollover
+        function renderHabits() {
+            const todayKey = getLocalDateKey(new Date());
+            const container = document.getElementById('habitItemsContainer');
+            const emptyMsg = document.getElementById('habitsEmptyMsg');
+            container.innerHTML = '';
+
+            // 1. Automatic Sleep Target Habit Item
+            const sleepStreak = calculateSleepTargetStreak();
+            const latestSleep = appState.sleepRecords[0];
+            const sleepDoneToday = latestSleep && latestSleep.dateKey === todayKey && latestSleep.goalMet;
+
+            const autoSleepIcon = document.getElementById('autoSleepHabitIcon');
+            const autoSleepStreak = document.getElementById('autoSleepHabitStreak');
+            if (sleepDoneToday) {
+                autoSleepIcon.className = "w-5 h-5 rounded flex items-center justify-center bg-emerald-500 border border-emerald-500 text-black font-bold text-[10px]";
+                autoSleepIcon.innerHTML = `<i class="fa-solid fa-check"></i>`;
+            } else {
+                autoSleepIcon.className = "w-5 h-5 rounded flex items-center justify-center border border-white/20 text-gray-500 text-[10px]";
+                autoSleepIcon.innerHTML = `<i class="fa-solid fa-bed"></i>`;
+            }
+            autoSleepStreak.innerHTML = `<i class="fa-solid fa-fire text-[10px]"></i> ${sleepStreak}d`;
+
+            // 2. Custom Habits
+            const habits = appState.habits;
+            if (habits.length === 0) {
+                emptyMsg.classList.remove('hidden');
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+
+            let doneCount = sleepDoneToday ? 1 : 0;
+            const totalCount = habits.length + 1; // including auto sleep habit
+
+            habits.forEach(h => {
+                const isCompletedToday = Boolean(appState.habitHistory[todayKey] && appState.habitHistory[todayKey][h.id]);
+                if (isCompletedToday) doneCount++;
+                const realStreak = calculateRealHabitStreak(h.id);
+
+                const item = document.createElement('div');
+                item.className = `p-2.5 rounded-lg border flex items-center justify-between text-xs transition ${
+                    isCompletedToday 
+                    ? 'bg-emerald-950/20 border-emerald-500/30 text-white' 
+                    : 'bg-white/5 border-white/5 text-gray-300'
+                }`;
+
+                item.innerHTML = `
+                    <div class="flex items-center space-x-2.5">
+                        <button onclick="toggleHabitCheck(${h.id})" class="w-5 h-5 rounded flex items-center justify-center border transition ${
+                            isCompletedToday 
+                            ? 'bg-emerald-500 border-emerald-500 text-black font-bold' 
+                            : 'border-white/20 hover:border-emerald-500 text-transparent'
+                        }">
+                            <i class="fa-solid fa-check text-[10px]"></i>
+                        </button>
+                        <div class="w-6 h-6 rounded bg-white/5 flex items-center justify-center text-accentCyan text-xs">
+                            <i class="fa-solid ${h.icon}"></i>
+                        </div>
+                        <span class="font-medium ${isCompletedToday ? 'line-through text-gray-400' : 'text-white'}">${h.name}</span>
+                    </div>
+                    <div class="flex items-center space-x-2.5">
+                        <span class="text-amber-400 font-bold text-xs flex items-center gap-1">
+                            <i class="fa-solid fa-fire text-[10px]"></i> ${realStreak}d
+                        </span>
+                        <button onclick="confirmDeleteHabit(${h.id}, this)" class="text-gray-500 hover:text-rose-400 transition text-[11px] p-1" title="Delete habit">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+
+            document.getElementById('habitsCountBadge').innerText = `${doneCount} / ${totalCount}`;
+            const pct = Math.round((doneCount / totalCount) * 100);
+            document.getElementById('habitProgressPercent').innerText = `${pct}%`;
+            document.getElementById('habitProgressBarInner').style.width = `${pct}%`;
+        }
+
+        function toggleHabitCheck(id) {
+            const todayKey = getLocalDateKey(new Date());
+            if (!appState.habitHistory[todayKey]) {
+                appState.habitHistory[todayKey] = {};
+            }
+
+            const current = Boolean(appState.habitHistory[todayKey][id]);
+            if (current) {
+                delete appState.habitHistory[todayKey][id];
+            } else {
+                appState.habitHistory[todayKey][id] = true;
+            }
+            saveState();
+            renderHabits();
+        }
+
+        // Two-Step Habit Delete Confirmation
+        function confirmDeleteHabit(id, btnElem) {
+            if (btnElem.dataset.confirming === "true") {
+                appState.habits = appState.habits.filter(h => h.id !== id);
+                saveState();
+                renderHabits();
+            } else {
+                btnElem.dataset.confirming = "true";
+                btnElem.innerHTML = `<span class="text-rose-400 font-bold text-[10px]">Sure?</span>`;
+                setTimeout(() => {
+                    if (btnElem && btnElem.parentNode) {
+                        btnElem.dataset.confirming = "false";
+                        btnElem.innerHTML = `<i class="fa-solid fa-trash-can"></i>`;
+                    }
+                }, 3000);
+            }
+        }
+
+        // Render Sleep History Table
+        function renderHistoryTable() {
+            const tbody = document.getElementById('sleepHistoryTableBody');
+            tbody.innerHTML = '';
+
+            if (appState.sleepRecords.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-500">No sleep records logged yet.</td></tr>`;
+                return;
+            }
+
+            appState.sleepRecords.forEach((record, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-white/5 transition";
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 font-medium text-white">${record.displayDate}</td>
+                    <td class="py-2.5 px-3 text-indigo-300">${record.bedtimeStr}</td>
+                    <td class="py-2.5 px-3 text-emerald-400">${record.waketimeStr}</td>
+                    <td class="py-2.5 px-3 font-bold text-accentCyan">${record.durationText}</td>
+                    <td class="py-2.5 px-3 text-gray-400">${record.awakeMinutes || 0}m</td>
+                    <td class="py-2.5 px-3 text-gray-300">${record.efficiency || 100}%</td>
+                    <td class="py-2.5 px-3">
+                        ${record.goalMet 
+                            ? `<span class="badge-pill bg-emerald-500/20 text-accentGreen border border-emerald-500/40">Yes (≥${appState.settings.sleepTargetHours}h)</span>` 
+                            : `<span class="badge-pill bg-white/10 text-gray-400">Under Target</span>`}
+                    </td>
+                    <td class="py-2.5 px-3 text-right">
+                        <button id="delBtn_${index}" onclick="handleDeleteRecordClick(${index})" class="text-gray-500 hover:text-rose-400 transition text-xs">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Two-Tap Single Record Deletion
+        function handleDeleteRecordClick(index) {
+            const btn = document.getElementById(`delBtn_${index}`);
+            if (confirmDeleteIndex === index) {
+                appState.sleepRecords.splice(index, 1);
+                confirmDeleteIndex = null;
+                saveState();
+                renderAll();
+            } else {
+                confirmDeleteIndex = index;
+                btn.innerHTML = `<span class="text-rose-400 font-bold text-[10px]">Confirm?</span>`;
+                setTimeout(() => {
+                    if (confirmDeleteIndex === index) {
+                        confirmDeleteIndex = null;
+                        renderHistoryTable();
+                    }
+                }, 3000);
+            }
+        }
+
+        // Two-Tap Full Reset Protection
+        function handleResetAllClick() {
+            const btn = document.getElementById('btnResetAll');
+            if (resetAllConfirmPending) {
+                appState.sleepRecords = [];
+                resetAllConfirmPending = false;
+                btn.innerHTML = `<i class="fa-solid fa-trash-can mr-1"></i> Reset Log`;
+                btn.className = "text-xs text-gray-400 hover:text-rose-400 transition border border-white/10 px-2.5 py-1 rounded";
+                saveState();
+                renderAll();
+            } else {
+                resetAllConfirmPending = true;
+                btn.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> Tap again to confirm full reset`;
+                btn.className = "text-xs text-rose-300 font-bold bg-rose-500/20 border border-rose-500/40 px-2.5 py-1 rounded";
+                setTimeout(() => {
+                    resetAllConfirmPending = false;
+                    btn.innerHTML = `<i class="fa-solid fa-trash-can mr-1"></i> Reset Log`;
+                    btn.className = "text-xs text-gray-400 hover:text-rose-400 transition border border-white/10 px-2.5 py-1 rounded";
+                }, 4000);
+            }
+        }
+
+        // Manual Entry Form with Rigorous Safety Validation
+        function handleManualFormSubmit(e) {
+            e.preventDefault();
+            const errBox = document.getElementById('manualErrorMsg');
+            errBox.classList.add('hidden');
+            errBox.innerText = '';
+
+            const bedVal = document.getElementById('inputManualBed').value;
+            const wakeVal = document.getElementById('inputManualWake').value;
+            const awakeMins = parseInt(document.getElementById('inputManualAwakeMins').value || '0', 10);
+
+            if (!bedVal || !wakeVal) return;
+
+            const bedTimestamp = new Date(bedVal).getTime();
+            const wakeTimestamp = new Date(wakeVal).getTime();
+            const now = Date.now();
+
+            // Rule 1: Reject Future Times
+            if (bedTimestamp > now || wakeTimestamp > now) {
+                errBox.innerText = "Error: Times cannot be in the future.";
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            // Rule 2: Chronological order
+            if (wakeTimestamp <= bedTimestamp) {
+                errBox.innerText = "Error: Wake-up time must be after bedtime.";
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            // Rule 3: Session cannot exceed 24 hours
+            const totalInBedMs = wakeTimestamp - bedTimestamp;
+            if (totalInBedMs > 24 * 60 * 60 * 1000) {
+                errBox.innerText = "Error: Sleep duration cannot exceed 24 hours.";
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            // Rule 4: Reject Overlapping Entries
+            const overlap = appState.sleepRecords.some(r => {
+                return (bedTimestamp < r.wakeTimestamp && wakeTimestamp > r.bedTimestamp);
+            });
+            if (overlap) {
+                errBox.innerText = "Error: This time overlaps with an existing logged sleep record.";
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            // Calculation
+            const awakeMs = awakeMins * 60 * 1000;
+            const netSleepMs = Math.max(0, totalInBedMs - awakeMs);
+            const durationHours = parseFloat((netSleepMs / (1000 * 60 * 60)).toFixed(2));
+            const inBedHours = parseFloat((totalInBedMs / (1000 * 60 * 60)).toFixed(2));
+            const totalMinutes = Math.round(netSleepMs / (1000 * 60));
+            const hoursPart = Math.floor(totalMinutes / 60);
+            const minsPart = totalMinutes % 60;
+            const efficiency = inBedHours > 0 ? Math.min(100, Math.round((durationHours / inBedHours) * 100)) : 100;
+            const goalMet = durationHours >= appState.settings.sleepTargetHours;
+
+            const wakeDate = new Date(wakeTimestamp);
+
+            const record = {
+                id: Date.now(),
+                dateKey: getLocalDateKey(wakeDate),
+                displayDate: formatLocalDateDisplay(wakeTimestamp),
+                bedTimestamp: bedTimestamp,
+                wakeTimestamp: wakeTimestamp,
+                bedtimeStr: formatLocalTime(bedTimestamp),
+                waketimeStr: formatLocalTime(wakeTimestamp),
+                durationHours: durationHours,
+                durationText: `${hoursPart}h ${minsPart}m`,
+                awakeMinutes: awakeMins,
+                efficiency: efficiency,
+                goalMet: goalMet
+            };
+
+            // Add and sort chronologically descending
+            appState.sleepRecords.push(record);
+            appState.sleepRecords.sort((a, b) => b.wakeTimestamp - a.wakeTimestamp);
+
+            saveState();
+            renderAll();
+            closeManualModal();
+        }
+
+        // Habit Creation
+        function handleCreateHabit(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('inputHabitName');
+            const iconSelect = document.getElementById('inputHabitIcon');
+
+            appState.habits.push({
+                id: Date.now(),
+                name: nameInput.value.trim(),
+                icon: iconSelect.value
+            });
+
+            saveState();
+            renderHabits();
+            nameInput.value = '';
+            closeHabitModal();
+        }
+
+        // Modals
+        function openManualModal() {
+            document.getElementById('manualErrorMsg').classList.add('hidden');
+            document.getElementById('manualModal').classList.remove('hidden');
+        }
+        function closeManualModal() {
+            document.getElementById('manualModal').classList.add('hidden');
+        }
+
+        function openHabitModal() {
+            document.getElementById('habitModal').classList.remove('hidden');
+        }
+        function closeHabitModal() {
+            document.getElementById('habitModal').classList.add('hidden');
+        }
+
+        function openTargetModal() {
+            document.getElementById('inputTargetSlider').value = appState.settings.sleepTargetHours;
+            document.getElementById('modalTargetValue').innerText = `${appState.settings.sleepTargetHours}h`;
+            document.getElementById('targetModal').classList.remove('hidden');
+        }
+        function closeTargetModal() {
+            document.getElementById('targetModal').classList.add('hidden');
+        }
+        function updateSliderLabel(val) {
+            document.getElementById('modalTargetValue').innerText = `${val}h`;
+        }
+        function saveTargetSetting() {
+            const val = parseFloat(document.getElementById('inputTargetSlider').value);
+            appState.settings.sleepTargetHours = val;
+            saveState();
+            renderAll();
+            closeTargetModal();
+        }
+
+        // Text Backup & Restore (Reliable in Mobile Sandboxes)
+        function openBackupModal() {
+            const output = document.getElementById('textBackupOutput');
+            output.value = JSON.stringify(appState, null, 2);
+            document.getElementById('copySuccessMsg').classList.add('hidden');
+            document.getElementById('restoreErrorMsg').classList.add('hidden');
+            document.getElementById('backupModal').classList.remove('hidden');
+        }
+        function closeBackupModal() {
+            document.getElementById('backupModal').classList.add('hidden');
+        }
+
+        function copyBackupToClipboard() {
+            const output = document.getElementById('textBackupOutput');
+            output.select();
+            navigator.clipboard.writeText(output.value).then(() => {
+                document.getElementById('copySuccessMsg').classList.remove('hidden');
+                appState.settings.lastBackupTimestamp = Date.now();
+                saveState();
+                checkBackupReminder();
+            }).catch(() => {
+                document.execCommand('copy');
+                document.getElementById('copySuccessMsg').classList.remove('hidden');
+            });
+        }
+
+        function handleRestoreSubmit() {
+            const input = document.getElementById('textRestoreInput').value;
+            const errBox = document.getElementById('restoreErrorMsg');
+            errBox.classList.add('hidden');
+
+            try {
+                const parsed = JSON.parse(input);
+                if (!parsed || typeof parsed !== 'object') throw new Error("Invalid structure");
+                appState = {
+                    settings: { ...appState.settings, ...(parsed.settings || {}) },
+                    activeSession: parsed.activeSession || null,
+                    sleepRecords: parsed.sleepRecords || [],
+                    habits: parsed.habits || [],
+                    habitHistory: parsed.habitHistory || {}
+                };
+                appState.settings.lastBackupTimestamp = Date.now();
+                saveState();
+                renderAll();
+                closeBackupModal();
+            } catch (err) {
+                errBox.innerText = "Error: Invalid JSON format. Please verify your backup text.";
+                errBox.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
