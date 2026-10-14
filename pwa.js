@@ -20,10 +20,10 @@ async function installApp() {
 }
 
 async function shareApp() {
-    const status = document.getElementById('shareStatus');
+    const statuses = ['shareStatus', 'guideShareStatus'].map(id => document.getElementById(id)).filter(Boolean);
     const url = document.querySelector('link[rel="canonical"]').href;
-    const shareData = { title: 'Sleep & Habit Log', text: 'A private, free sleep diary with habits and a focus timer.', url };
-    status.classList.add('hidden');
+    const shareData = { title: 'Rest & Rise', text: 'A private, free sleep diary with habits and a focus timer.', url };
+    statuses.forEach(status => status.classList.add('hidden'));
     if (navigator.share) {
         try {
             await navigator.share(shareData);
@@ -32,14 +32,18 @@ async function shareApp() {
             if (error.name === 'AbortError') return;
         }
     }
+    let message;
     try {
         if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable.');
         await navigator.clipboard.writeText(url);
-        status.innerText = 'App link copied. Your diary data is not shared.';
+        message = 'App link copied. Your diary data is not shared.';
     } catch (error) {
-        status.innerText = `Share this app link: ${url}`;
+        message = `Share this app link: ${url}`;
     }
-    status.classList.remove('hidden');
+    statuses.forEach(status => {
+        status.innerText = message;
+        status.classList.remove('hidden');
+    });
 }
 
 if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') {
@@ -75,7 +79,7 @@ async function showMorningNotification(body) {
     if (!('Notification' in window) || Notification.permission !== 'granted' || !('serviceWorker' in navigator)) return false;
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration?.active) throw new Error('Offline app not ready.');
-    await registration.showNotification('Sleep log check-in', {
+    await registration.showNotification('Rest & Rise check-in', {
         body,
         tag: 'sleep-morning-checkin',
         icon: './assets/icon-192.png',

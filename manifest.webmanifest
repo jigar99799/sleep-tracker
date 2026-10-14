@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Sleep & Habit Log",
-  "short_name": "Sleep Log",
+  "name": "Rest & Rise - Sleep Diary and Habits",
+  "short_name": "Rest & Rise",
   "description": "Private sleep diary, daily habits, and a focus timer with optional morning check-ins.",
   "lang": "en",
   "start_url": "./sleep-tracker.html",

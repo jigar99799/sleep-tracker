@@ -264,3 +264,17 @@ test('Google ownership verification file is present with the exact expected payl
     assert.ok(fs.existsSync(filePath), `Keep ${name} in the repository root and commit it before deploying.`);
     assert.equal(fs.readFileSync(filePath, 'utf8').trim(), `google-site-verification: ${name}`);
 });
+
+test('Rest and Rise branding and visual guide preserve the real app scope', () => {
+    const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+    const manifest = JSON.parse(fs.readFileSync(`${__dirname}/../manifest.webmanifest`, 'utf8'));
+    assert.equal(schema.name, 'Rest & Rise');
+    assert.equal(manifest.short_name, 'Rest & Rise');
+    assert.equal(manifest.start_url, './sleep-tracker.html');
+    assert.ok(html.includes('id="infoModal"'));
+    assert.ok(html.includes('aria-label="About Rest and Rise and how to use it"'));
+    for (const text of ['Your night, in three steps', 'Example only:', 'Install on Android', 'Privacy, backups', 'Honest feedback, positive or critical', 'No phone sensors']) assert.ok(html.includes(text), text);
+    assert.ok(html.includes('issues/new?template=feedback.yml'));
+    assert.ok(fs.existsSync(`${__dirname}/../.github/ISSUE_TEMPLATE/feedback.yml`));
+    assert.equal(schema.url, 'https://jigar99799.github.io/sleep-tracker/sleep-tracker.html');
+});

@@ -3,30 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sleep &amp; Habit Log | Free Sleep Diary &amp; Habit Tracker</title>
+    <title>Rest &amp; Rise | Free Sleep Diary, Habits &amp; Focus</title>
     <meta name="theme-color" content="#090b0e">
     <meta name="description" content="Free, private sleep diary with daily habits, a focus timer, and optional morning check-ins. Install on Android and use offline. No account or subscription.">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <link rel="canonical" href="https://jigar99799.github.io/sleep-tracker/sleep-tracker.html">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Sleep &amp; Habit Log">
-    <meta property="og:title" content="Sleep &amp; Habit Log | Free Sleep Diary &amp; Habit Tracker">
+    <meta property="og:site_name" content="Rest &amp; Rise">
+    <meta property="og:title" content="Rest &amp; Rise | Free Sleep Diary, Habits &amp; Focus">
     <meta property="og:description" content="A private sleep diary, daily habits, and a focus timer. Install on Android. No account, subscription, or invented sleep scores.">
     <meta property="og:url" content="https://jigar99799.github.io/sleep-tracker/sleep-tracker.html">
     <meta property="og:image" content="https://jigar99799.github.io/sleep-tracker/assets/social-preview.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Sleep and Habit Log interface showing the timestamp clock with no personal data.">
+    <meta property="og:image:alt" content="Rest and Rise sleep diary interface without personal data.">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Sleep &amp; Habit Log | Free Sleep Diary">
+    <meta name="twitter:title" content="Rest &amp; Rise | Free Sleep Diary">
     <meta name="twitter:description" content="Private sleep diary, habits, and a focus timer. Install on Android and use offline. No account or subscription.">
     <meta name="twitter:image" content="https://jigar99799.github.io/sleep-tracker/assets/social-preview.png">
-    <meta name="twitter:image:alt" content="The Sleep and Habit Log app interface without personal records.">
+    <meta name="twitter:image:alt" content="The Rest and Rise app interface without personal records.">
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
         "@type": "WebApplication",
-        "name": "Sleep & Habit Log",
+        "name": "Rest & Rise",
         "url": "https://jigar99799.github.io/sleep-tracker/sleep-tracker.html",
         "image": "https://jigar99799.github.io/sleep-tracker/assets/social-preview.png",
         "description": "A private, user-reported sleep diary with daily habits, a focus timer, and optional check-ins while open. Not a medical device or automatic sleep detector.",
@@ -120,14 +120,15 @@
                 </div>
                 <div>
                     <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
-                        Sleep & Habit Log
+                        Rest &amp; Rise
                     </h1>
-                    <p class="text-[11px] text-gray-400">Private sleep diary · Local device time</p>
+                    <p class="text-[11px] text-gray-400">Sleep diary, habits &amp; daily focus</p>
                 </div>
             </div>
 
             <!-- Header Controls -->
             <div class="flex items-center space-x-2">
+                <button onclick="openDialog('infoModal')" class="p-2 text-accentCyan" title="About Rest & Rise and how to use it" aria-label="About Rest and Rise and how to use it"><i class="fa-solid fa-circle-info" aria-hidden="true"></i></button>
                 <button id="btnInstall" onclick="installApp()" class="hidden p-2 text-accentCyan" title="Install app" aria-label="Install app"><i class="fa-solid fa-download"></i></button>
                 <button onclick="shareApp()" class="p-2 text-accentCyan" title="Share app link" aria-label="Share app link"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>
                 <button onclick="openTargetModal()" class="bg-white/5 hover:bg-white/10 text-gray-300 text-xs px-2.5 py-1.5 rounded-lg border border-white/10 transition flex items-center gap-1.5" title="Change Sleep Target">
@@ -587,6 +588,86 @@
 
             <div class="pt-3 mt-3 border-t border-white/10 flex justify-end">
                 <button type="button" onclick="closeBackupModal()" class="px-3.5 py-1.5 rounded-lg bg-white/10 text-white">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="infoModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden p-3 sm:p-4">
+        <div class="glass-card rounded-lg w-full max-w-3xl relative">
+            <div class="sticky top-0 bg-darkBg border-b border-white/10 px-5 py-4 z-10">
+                <button onclick="closeDialog('infoModal')" class="absolute top-3 right-3 w-9 h-9 text-gray-400 hover:text-white" aria-label="Close dialog" title="Close dialog"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                <h3 class="text-lg font-bold text-white pr-10">Rest &amp; Rise</h3>
+                <p class="text-xs text-gray-400 mt-1">A private sleep diary and a little structure for your day.</p>
+            </div>
+            <div class="px-5 pb-5 text-xs text-gray-300 leading-relaxed divide-y divide-white/10">
+                <section class="py-5" aria-labelledby="guideSleepHeading">
+                    <h4 id="guideSleepHeading" class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-moon text-accentCyan mr-2" aria-hidden="true"></i>Your night, in three steps</h4>
+                    <ol class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <li class="flex gap-3"><span class="w-8 h-8 shrink-0 rounded-lg bg-emerald-500/15 text-accentGreen flex items-center justify-center"><i class="fa-solid fa-moon" aria-hidden="true"></i></span><div><strong class="block text-white">1. Start at bedtime</strong>Tap <strong>Going to Sleep Now</strong>. The start time is saved on this device.</div></li>
+                        <li class="flex gap-3"><span class="w-8 h-8 shrink-0 rounded-lg bg-amber-500/15 text-accentAmber flex items-center justify-center"><i class="fa-solid fa-pause" aria-hidden="true"></i></span><div><strong class="block text-white">2. Mark awake time</strong>Use <strong>Awake in Bed</strong> if needed, then <strong>Back Asleep</strong>. Only marked awake time is deducted.</div></li>
+                        <li class="flex gap-3"><span class="w-8 h-8 shrink-0 rounded-lg bg-cyan-500/15 text-accentCyan flex items-center justify-center"><i class="fa-solid fa-sun" aria-hidden="true"></i></span><div><strong class="block text-white">3. Finish when awake</strong>Tap <strong>I'm Awake Now</strong> to save the record. Closing the app does not stop a session.</div></li>
+                    </ol>
+                    <figure class="mt-4">
+                        <figcaption class="text-gray-400 mb-2">Example only: 8h in bed minus 30m marked awake = 7h 30m reported.</figcaption>
+                        <div role="img" aria-label="Example: seven hours thirty minutes reported duration and thirty minutes marked awake out of eight hours in bed" class="grid h-3 rounded overflow-hidden" style="grid-template-columns: 15fr 1fr"><span class="bg-accentGreen"></span><span class="bg-accentAmber"></span></div>
+                        <div class="flex flex-wrap justify-between gap-2 mt-2"><span class="text-accentGreen">7h 30m reported duration</span><span class="text-accentAmber">30m marked awake</span></div>
+                    </figure>
+                    <p class="mt-3">Forgot to log? <strong>Manual Log</strong> accepts past times and awake minutes. Future times, overlapping records, and records over 24 hours are rejected. Discard an incorrect active session before manually replacing it; completed records can be deleted and re-entered.</p>
+                    <p class="text-amber-200 mt-2">This is your report, not measured sleep. Unmarked wakefulness and time taken to fall asleep are unknown. No phone sensors, sleep stages, medical diagnosis, or accuracy guarantee.</p>
+                </section>
+
+                <section class="py-5" aria-labelledby="guideDayHeading">
+                    <h4 id="guideDayHeading" class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-list-check text-accentGreen mr-2" aria-hidden="true"></i>A simpler day</h4>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div><strong class="text-white block mb-1">Habits &amp; one priority</strong>Choose <strong>Add Habit</strong>, enter a name and icon, then check it off when done. Streaks use consecutive dates with check-offs. Enter one priority under <strong>Today's focus</strong> and mark it complete yourself.</div>
+                        <div><strong class="text-white block mb-1">Focus, pause, reset</strong><i class="fa-solid fa-play text-accentGreen mr-1" aria-hidden="true"></i>Start a 25-minute countdown. <i class="fa-solid fa-pause text-accentAmber mx-1" aria-hidden="true"></i>Pause when interrupted, then resume or <i class="fa-solid fa-arrow-rotate-left text-accentCyan mx-1" aria-hidden="true"></i>reset. Finished timers are counts, not proof of concentration. No background alarm is guaranteed.</div>
+                    </div>
+                    <p class="text-gray-400 mt-3">Priority and timer counts reset on a new local date; habits remain available. A running countdown is recovered from its saved deadline when you return.</p>
+                </section>
+
+                <details class="py-4" open>
+                    <summary class="font-semibold text-white cursor-pointer"><i class="fa-solid fa-chart-simple text-accentCyan mr-2" aria-hidden="true"></i>Read your numbers</summary>
+                    <dl class="grid sm:grid-cols-2 gap-x-5 gap-y-3 mt-3">
+                        <div><dt class="font-semibold text-white">Duration &amp; efficiency</dt><dd>Duration is time in bed minus marked awake time. Reported efficiency is that duration divided by time in bed, not a clinical measurement.</dd></div>
+                        <div><dt class="font-semibold text-white">Your sleep target</dt><dd>Use the target button to choose 5–10 hours. It is your chosen goal, not a medical recommendation. Changing it updates comparisons.</dd></div>
+                        <div><dt class="font-semibold text-white">The last seven days</dt><dd>Records are grouped by local wake-up date. Multiple sessions on one day are summed. Missing days are unknown, not zero sleep.</dd></div>
+                        <div><dt class="font-semibold text-white">Shortfall &amp; bedtime spread</dt><dd>Shortfall counts deficits on logged days only. Bedtime spread is a time range, not a sleep-quality score or diagnosis.</dd></div>
+                    </dl>
+                </details>
+
+                <details class="py-4">
+                    <summary class="font-semibold text-white cursor-pointer"><i class="fa-solid fa-mobile-screen-button text-accentGreen mr-2" aria-hidden="true"></i>Install on Android &amp; use offline</summary>
+                    <ol class="list-decimal pl-5 space-y-2 mt-3"><li>Open this website directly in Android Chrome.</li><li>Wait for <strong>Offline ready</strong> after the first online load.</li><li>Use Chrome's <strong>Install app</strong> or <strong>Add to Home screen</strong>, or the app's download icon when available.</li><li>Open the new app icon. Installation is optional; the same diary works in the browser.</li></ol>
+                    <p class="mt-3">The downloadable GitHub release is a web ZIP, not an Android APK. Keep its HTML and assets together. Browser caches can be evicted, so offline availability and permanent storage are not guaranteed.</p>
+                    <a href="https://github.com/jigar99799/sleep-tracker/releases/latest" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-accentCyan underline mt-3"><i class="fa-solid fa-download" aria-hidden="true"></i>Download the latest web release</a>
+                </details>
+
+                <details class="py-4">
+                    <summary class="font-semibold text-white cursor-pointer"><i class="fa-regular fa-bell text-accentAmber mr-2" aria-hidden="true"></i>Start &amp; stop morning reminders</summary>
+                    <p class="mt-3">Expand <strong>Morning reminders</strong> on the main screen, enable the check-in, and choose a local time. It appears after that time only if today's record is missing or a session is still open. Use the clock to snooze 10 minutes or the X to dismiss today.</p>
+                    <p class="mt-2">System notifications need your permission and are optional. Turn the reminder off to stop checks and close the app's displayed notification. Permission denial does not block the diary.</p>
+                    <p class="text-amber-200 mt-2">Checks run only while the app is open and visible. There is no scheduled push while closed, locked, or suspended. Use Android Clock for a dependable daily alarm; it cannot check your diary.</p>
+                </details>
+
+                <details class="py-4">
+                    <summary class="font-semibold text-white cursor-pointer"><i class="fa-solid fa-shield-halved text-accentCyan mr-2" aria-hidden="true"></i>Privacy, backups &amp; cost</summary>
+                    <p class="mt-3">Your records stay in this browser's storage. There is no app account, cloud sync, analytics, or paid API. Hosting providers still receive normal asset requests. Data is not encrypted by this application; use one tab at a time.</p>
+                    <p class="mt-2">Open <strong>Backup</strong>, copy the JSON, and keep it privately outside the browser. To move devices, paste that JSON into <strong>Restore State</strong> and confirm replacement. Sharing the app link never shares your diary.</p>
+                    <p class="mt-2">Clearing site data, private browsing, browser eviction, or changing browsers/domains can lose records. <strong>Reset Log</strong> deletes completed sleep records only. Times use your device clock and current timezone; clock changes and daylight-saving ambiguity can affect them.</p>
+                    <p class="mt-2">No subscriptions or app payments. Third-party hosting cannot be promised free for a lifetime. Keep source and backups. This diary is not medical advice; speak to a qualified clinician about sleep concerns.</p>
+                </details>
+
+                <section class="pt-5" aria-labelledby="guideFeedbackHeading">
+                    <h4 id="guideFeedbackHeading" class="text-sm font-bold text-white">Help make Rest &amp; Rise better</h4>
+                    <p class="mt-2">Tell us what worked, what was confusing, or what went wrong. Honest feedback, positive or critical, is welcome. Do not post backup JSON, health records, or personal details in a public issue.</p>
+                    <div class="flex flex-wrap items-center gap-3 mt-3">
+                        <a href="https://github.com/jigar99799/sleep-tracker/issues/new?template=feedback.yml" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-accentCyan underline"><i class="fa-regular fa-comment" aria-hidden="true"></i>Send feedback on GitHub</a>
+                        <button onclick="shareApp()" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/15 text-white"><i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>Share app link</button>
+                        <a href="https://github.com/jigar99799/sleep-tracker" target="_blank" rel="noopener noreferrer" class="text-gray-400 underline">Project &amp; contribution guide</a>
+                    </div>
+                    <p class="text-gray-500 mt-2">GitHub feedback requires a GitHub account and is public. Sharing uses your device's share sheet or a copied public link, never your records.</p>
+                    <p id="guideShareStatus" class="hidden text-accentCyan break-words mt-2" role="status" aria-live="polite"></p>
+                </section>
             </div>
         </div>
     </div>
@@ -1669,7 +1750,7 @@
                 if (!modal) return;
                 if (event.key === 'Escape') closeDialog(modal.id);
                 if (event.key !== 'Tab') return;
-                const controls = [...modal.querySelectorAll('button, input, select, textarea, a[href]')].filter(control => !control.disabled && control.getClientRects().length);
+                const controls = [...modal.querySelectorAll('button, input, select, textarea, a[href], summary')].filter(control => !control.disabled && control.getClientRects().length);
                 const first = controls[0];
                 const last = controls[controls.length - 1];
                 if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }

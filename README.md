@@ -1,6 +1,8 @@
-# Sleep & Habit Log
+# Rest & Rise
 
-A private sleep diary that runs on GitHub Pages and can be installed on Android as a progressive web app (PWA). No account, subscription, paid API, ads, analytics, or application backend.
+**Sleep diary, habits & daily focus.** Rest & Rise is a private sleep diary that runs on GitHub Pages and can be installed on Android as a progressive web app (PWA). No app account, subscription, paid API, ads, analytics, or application backend. Previously called Sleep & Habit Log; the website URL, storage key, and backup format remain unchanged.
+
+Use the **information-circle icon** in the header for the visual guide. It explains bedtime/wake-up logging, marked awake time, duration examples, habits, focus, Android installation, reminder limits, privacy, cost, backups, and feedback. The guide works offline after the app shell is cached; external GitHub feedback and release links require a network connection.
 
 **This is not a 100%-accurate automatic sleep tracker or a medical device.** It logs user-reported times, daily habits, a daily priority, and a focus countdown. It does not use phone sensors or infer sleep stages.
 
@@ -101,13 +103,35 @@ The **Share app link** icon uses the device share sheet when available, with a c
 
 A `robots.txt` applies only at a domain's origin root, not at `/sleep-tracker/robots.txt`. This project does not create a misleading project-scoped robots file. The app's page-level robots directive allows indexing; hosting configuration and search-engine decisions still control actual crawling/indexing.
 
-Metadata and a sitemap do **not** guarantee indexing, ranking, traffic, or virality. Structured data is not a promise of a Google rich result. No search-engine account has been verified, no sitemap has been submitted on your behalf, and no tracking or marketing service has been added.
+Metadata and a sitemap do **not** guarantee indexing, ranking, traffic, or virality. Structured data is not a promise of a Google rich result. Code changes do not automatically verify accounts or submit indexing requests; manage those steps in your own Search Console account. No tracking or marketing service has been added.
+
+### Does GitHub Affect Ranking?
+
+`.github/` is a repository configuration folder, not the public website address. The app is hosted on `jigar99799.github.io`. GitHub Pages hosting does not itself prevent indexing or impose an automatic Google ranking penalty. A new site can still struggle to be discovered, indexed, or ranked; a successful live test or indexing request is not a promise that Google will include it.
+
+Keep the current canonical HTML URL and sitemap stable. Build a useful, readable app, retain clear page metadata and an honest guide, test mobile usability, and earn relevant references from real users or project pages. Monitor Search Console's indexing details, impressions, and clicks instead of repeatedly submitting the same URL. Reported improvements should be based on actual results, not assumed SEO effects.
+
+A custom domain can make the brand easier to remember and give you a portable address, but it usually has an ongoing cost and is not a guaranteed ranking boost. It is optional; no domain purchase, DNS change, repository rename, or URL migration is needed for this free setup. If you later migrate, plan redirects, canonical/sitemap updates, Search Console verification, and a local-data backup first because browser storage belongs to the origin.
+
+### Collect Useful Feedback
+
+The information panel links to a GitHub issue form for suggestions, bugs, questions, and things that worked well. GitHub issues are public and require a GitHub account. The form does not attach diary data automatically and warns people not to post backup JSON or personal health information. It becomes available after `.github/ISSUE_TEMPLATE/feedback.yml` is published on the default branch.
+
+Ask the same neutral questions of all testers: Could you install it? Could you save a record and find it after reload? What was confusing? What would you change? Welcome criticism as well as praise. Do not gate features, offer rewards for positive comments, filter out criticism, fabricate ratings, or publish someone's testimonial without permission. A better experience can encourage good feedback, but nobody can guarantee a positive response.
 
 ### Short Launch Message
 
-> I built a free, private sleep diary you can install on Android and use offline after setup. It includes daily habits and a focus timer. Records stay in your browser, and sleep times come from your entries, not guessed sensor readings. Try it: https://jigar99799.github.io/sleep-tracker/ . Feedback is welcome.
+> Meet Rest & Rise: a free, private sleep diary with daily habits and a focus timer. Install it on Android and use it offline after setup, with no app account or subscription. Sleep times come from your entries, not guessed sensor readings. Try it: https://jigar99799.github.io/sleep-tracker/ . Tell me what works and what needs improving.
 
 Pair that message with a short real screen recording showing installation, one manual entry, and the focus timer. Share it with people who want a simple diary, use relevant communities only where promotion is allowed, and ask for specific feedback. Do not buy reviews, fabricate users/results, send unsolicited bulk messages, or claim guaranteed accuracy. Update the preview screenshot if the interface changes materially; it must not include personal records.
+
+### A Practical First Launch
+
+1. Publish the changes and close all old app tabs before reopening so the new offline cache can activate. Confirm the Rest & Rise name, information icon, install flow, and backup still work on a physical Android phone. Existing installs may need time or browser support to refresh their displayed app name.
+2. Invite 5–10 willing testers privately, without bulk messaging. Ask them to try the app with their own device; do not collect their sleep data or require a public review.
+3. Make a 30-second walkthrough using an empty test profile: install, log a sample session clearly labeled as an example, find the information guide, and start/pause focus. Do not present example numbers as real results.
+4. Fix the most common confusion first. Then share the walkthrough with relevant communities that allow project promotion, using the launch copy above and disclosing that you made the app.
+5. Publish meaningful version notes and respond constructively to issues. Use actual tester feedback and Search Console reports to decide what to improve. No paid growth tool, forced signup, fabricated popularity, or automatic social posting is required.
 
 ## What the Data Means
 

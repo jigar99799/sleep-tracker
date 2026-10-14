@@ -1,0 +1,47 @@
+name: Feedback on Rest & Rise
+description: Share a suggestion, question, bug, or an experience with the app.
+title: "[Feedback] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying Rest & Rise. Honest feedback, positive or critical, is welcome.
+        This issue is public. Do not include backup JSON, personal sleep records, health information, passwords, or contact details.
+        GitHub feedback is not a medical-support channel.
+  - type: dropdown
+    id: category
+    attributes:
+      label: What would you like to share?
+      options:
+        - Suggestion
+        - Bug or confusing behavior
+        - Question
+        - Something that worked well
+    validations:
+      required: true
+  - type: textarea
+    id: experience
+    attributes:
+      label: Your feedback
+      description: Tell us what you tried and what happened, without private diary data.
+      placeholder: I tried this action, and noticed...
+    validations:
+      required: true
+  - type: textarea
+    id: improvement
+    attributes:
+      label: What would make it better?
+      description: Optional. For a bug, describe the expected result and steps to reproduce.
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      description: Optional. Browser name and version are enough; do not include identifying details.
+      placeholder: Android Chrome, installed web app
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Public issue privacy
+      options:
+        - label: I have not included personal diary data, backup JSON, or sensitive information.
+          required: true

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sleep-diary-v3';
+const CACHE_NAME = 'sleep-diary-v4';
 const APP_FILES = [
     './', './index.html', './sleep-tracker.html', './manifest.webmanifest', './pwa.js',
     './assets/app.css', './assets/icons.css', './assets/chart.umd.js',

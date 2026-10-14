@@ -65,6 +65,6 @@ jobs:
         run: |
           gh release create "$TAG_NAME" sleep-habit-log-web.zip SHA256SUMS.txt \
             --verify-tag \
-            --title "Sleep & Habit Log $TAG_NAME" \
+            --title "Rest & Rise $TAG_NAME" \
             --generate-notes \
             --notes 'Download sleep-habit-log-web.zip for the web app and bundled offline assets. This is not an Android APK. To install on Android, open https://jigar99799.github.io/sleep-tracker/ in Chrome and choose Install app. Reminder checks require the app to be open and visible. Read README.md inside the ZIP for setup, privacy, and limitations.'
