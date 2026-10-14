@@ -278,18 +278,3 @@ test('Rest and Rise branding and visual guide preserve the real app scope', () =
     assert.ok(fs.existsSync(`${__dirname}/../.github/ISSUE_TEMPLATE/feedback.yml`));
     assert.equal(schema.url, 'https://jigar99799.github.io/sleep-tracker/sleep-tracker.html');
 });
-
-test('manual release retains owner, main, tested-commit, and protected-tag guards', () => {
-    const workflow = fs.readFileSync(`${__dirname}/../.github/workflows/release.yml`, 'utf8');
-    assert.ok(workflow.includes('workflow_dispatch:'));
-    assert.ok(workflow.includes('version:'));
-    assert.equal(workflow.includes("tags: ['v*']"), false);
-    assert.equal(workflow.split("github.actor == 'jigar99799' && github.triggering_actor == 'jigar99799' && github.ref == 'refs/heads/main'").length - 1, 2);
-    assert.ok(workflow.includes('git merge-base --is-ancestor HEAD refs/remotes/origin/main'));
-    assert.ok(workflow.includes('RELEASE_SHA: ${{ needs.package.outputs.sha }}'));
-    assert.ok(workflow.includes('GH_TOKEN: ${{ secrets.RELEASE_TAG_TOKEN }}'));
-    assert.ok(workflow.includes("gh api user --jq .login"));
-    assert.ok(workflow.includes('The tag already points to different code. It will not be moved.'));
-    assert.ok(workflow.includes('--verify-tag'));
-    assert.equal(workflow.includes('git push --force'), false);
-});

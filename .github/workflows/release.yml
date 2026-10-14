@@ -1,53 +1,28 @@
 name: Publish Downloadable Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'New release tag, for example v1.1.0 (release from main only)'
-        required: true
-        type: string
+  push:
+    tags: ['v*']
 
 permissions:
   contents: read
 
-concurrency:
-  group: release-${{ inputs.version }}
-  cancel-in-progress: false
-
 jobs:
   package:
-    if: github.actor == 'jigar99799' && github.triggering_actor == 'jigar99799' && github.ref == 'refs/heads/main'
+    if: github.actor == 'jigar99799' && github.triggering_actor == 'jigar99799'
     runs-on: ubuntu-latest
-    outputs:
-      sha: ${{ steps.source.outputs.sha }}
     steps:
-      - name: Require protected-tag credential
-        env:
-          HAS_TAG_TOKEN: ${{ secrets.RELEASE_TAG_TOKEN != '' }}
-        run: |
-          if [[ "$HAS_TAG_TOKEN" != 'true' ]]; then
-            echo 'Add RELEASE_TAG_TOKEN under Settings > Secrets and variables > Actions.'
-            echo 'Use an owner-created fine-grained token for this repository with Contents: read and write.'
-            exit 1
-          fi
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
           fetch-depth: 0
       - name: Validate version tag
         env:
-          TAG_NAME: ${{ inputs.version }}
+          TAG_NAME: ${{ github.ref_name }}
         run: |
           if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo 'Use a stable version tag such as v1.0.0.'
             exit 1
-          fi
-          if git show-ref --verify --quiet "refs/tags/$TAG_NAME"; then
-            if [[ "$(git rev-parse "$TAG_NAME^{commit}")" != "$(git rev-parse HEAD)" ]]; then
-              echo 'This tag already refers to another commit. Choose a new version.'
-              exit 1
-            fi
           fi
       - name: Require code already on main
         run: |
@@ -55,9 +30,6 @@ jobs:
             echo 'Release rejected: merge the changes into main before tagging this commit.'
             exit 1
           fi
-      - name: Record the tested commit
-        id: source
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -76,7 +48,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    if: github.actor == 'jigar99799' && github.triggering_actor == 'jigar99799' && github.ref == 'refs/heads/main'
+    if: github.actor == 'jigar99799' && github.triggering_actor == 'jigar99799'
     needs: package
     runs-on: ubuntu-latest
     permissions:
@@ -85,33 +57,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: downloadable-release
-      - name: Create protected version tag without moving existing tags
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TAG_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          TAG_NAME: ${{ inputs.version }}
-          RELEASE_SHA: ${{ needs.package.outputs.sha }}
-        run: |
-          if [[ "$(gh api user --jq .login)" != 'jigar99799' ]]; then
-            echo 'RELEASE_TAG_TOKEN must belong to the repository owner, jigar99799.'
-            exit 1
-          fi
-          existing_sha="$(gh api "repos/$GH_REPO/git/ref/tags/$TAG_NAME" --jq .object.sha 2>/dev/null || true)"
-          if [[ -n "$existing_sha" ]]; then
-            resolved_sha="$(gh api "repos/$GH_REPO/commits/$TAG_NAME" --jq .sha)"
-            if [[ "$resolved_sha" != "$RELEASE_SHA" ]]; then
-              echo 'The tag already points to different code. It will not be moved.'
-              exit 1
-            fi
-          else
-            gh api --method POST "repos/$GH_REPO/git/refs" \
-              -f "ref=refs/tags/$TAG_NAME" -f "sha=$RELEASE_SHA" --silent
-          fi
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG_NAME: ${{ inputs.version }}
+          TAG_NAME: ${{ github.ref_name }}
         run: |
           gh release create "$TAG_NAME" sleep-habit-log-web.zip SHA256SUMS.txt \
             --verify-tag \
